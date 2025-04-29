@@ -6,6 +6,8 @@
     <ItemGroup>
         <Compile Include="StarFieldTests.fs" />
         <Compile Include="PropertyBasedTests.fs" />
+        <Compile Include="ImageGenerationTests.fs" />
+        <Compile Include="ImageGenerationPropertyTests.fs" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EigenAstroSim.Domain\EigenAstroSim.Domain.fsproj" />

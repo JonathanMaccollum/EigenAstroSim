@@ -4,6 +4,7 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
     <ItemGroup>
-        <Compile Include="StarField.fs" />
+        <Compile Include="Types.fs" />
+        <Compile Include="ImageGeneration.fs" />
     </ItemGroup>
 </Project>

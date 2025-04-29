@@ -1,6 +1,8 @@
 namespace EigenAstroSim.Domain
 
 module Types =
+    open System
+
     /// Represents a single star in the virtual sky
     type Star = {
         Id: System.Guid
@@ -23,6 +25,56 @@ module Types =
         ReferenceRA: float
         ReferenceDec: float
         ReferenceRotation: float
+    }
+
+    /// Represents the state of the mount
+    type MountState = {
+        RA: float
+        Dec: float
+        TrackingRate: float
+        PolarAlignmentError: float
+        PeriodicErrorAmplitude: float
+        PeriodicErrorPeriod: float
+        IsSlewing: bool
+        SlewRate: float
+        FocalLength: float
+    }
+
+    /// Represents the state of the camera
+    type CameraState = {
+        Width: int
+        Height: int
+        PixelSize: float  // Pixel size in microns
+        ExposureTime: float
+        Binning: int
+        IsExposing: bool
+        ReadNoise: float
+        DarkCurrent: float
+    }
+
+    /// Represents the state of the rotator
+    type RotatorState = {
+        Position: float  // In degrees
+        IsMoving: bool
+    }
+
+    /// Represents the state of the atmosphere
+    type AtmosphericState = {
+        SeeingCondition: float  // In arcseconds
+        CloudCoverage: float    // 0.0 to 1.0
+        Transparency: float     // 0.0 to 1.0
+    }
+
+    /// Represents the overall simulation state
+    type SimulationState = {
+        StarField: StarFieldState
+        Mount: MountState
+        Camera: CameraState
+        Rotator: RotatorState
+        Atmosphere: AtmosphericState
+        TimeScale: float        // For accelerating simulation
+        CurrentTime: DateTime
+        HasSatelliteTrail: bool
     }
 
 module StarField =
