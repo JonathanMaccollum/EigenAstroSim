@@ -1,0 +1,142 @@
+# EigenAstroSim Test Documentation
+
+## Overview
+
+This document summarizes the test suite for the EigenAstroSim project, including the existing tests for the Star Field and Image Generation components, as well as proposed tests for the upcoming Mount Simulation component.
+
+## 1. Star Field Tests
+
+The star field component has extensive unit and property-based tests to ensure accurate and realistic star field generation.
+
+### 1.1 Unit Tests (StarFieldTests)
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `CreateEmpty should return empty star field with specified reference coordinates` | Tests initialization of empty star field | Verifies emptiness and correct reference coordinates |
+| `Star magnitudes should be within valid astronomical range` | Tests magnitude constraints | Ensures all stars have magnitudes between 1.0 and limit magnitude |
+| `Star colors should be within valid B-V index range` | Tests color index constraints | Verifies B-V indices between -0.3 and 2.0 |
+| `Star coordinates should be within specified field radius` | Tests spatial distribution | Confirms all stars within specified radius |
+| `Star density should decrease with galactic latitude` | Tests density variation | Higher galactic latitudes have fewer stars |
+| `Star count should increase with limiting magnitude` | Tests magnitude distribution | Higher limiting magnitude results in more stars |
+| `Expanding star field should add new stars for uncovered regions` | Tests field expansion logic | New regions add new stars |
+| `Stars should persist when revisiting an area` | Tests star persistence | Stars remain in memory when returning to a previously visited area |
+| `Star field should generate a reasonable number of stars` | Tests star count reasonability | Ensures star count is reasonable |
+| `Calculate covered region should return None for empty star field` | Tests empty field behavior | Covered region is None for empty fields |
+| `Calculate covered region should return valid region for non-empty star field` | Tests region calculation | Returns valid region containing all stars |
+| `Region contains should correctly identify contained regions` | Tests region containment | Correctly determines if one region is within another |
+| `Stars should have unique IDs` | Tests star ID uniqueness | Each star has a unique identifier |
+| `Brighter stars should tend to be bluer` | Tests color-magnitude relationship | Brighter stars have lower B-V indices on average |
+
+### 1.2 Property-Based Tests (PropertyBasedTests)
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Star magnitudes should be within valid astronomical range` | Tests magnitude constraints (multiple parameters) | Stars have magnitudes between 1.0 and limit magnitude |
+| `Star colors should be within valid B-V index range` | Tests color index constraints (multiple parameters) | B-V indices between -0.3 and 2.0 |
+| `Star coordinates should be within specified field radius` | Tests spatial distribution (multiple parameters) | All stars within specified radius |
+| `Stars should have unique IDs` | Tests star ID uniqueness (multiple parameters) | Each star has a unique identifier |
+| `Higher limiting magnitude should result in more stars` | Tests magnitude scaling (multiple parameters) | Higher limiting magnitude yields more stars |
+| `Stars persist when revisiting an area` | Tests star persistence (multiple parameters) | Stars remain in memory when returning to a region |
+| `Star density should decrease with galactic latitude` | Tests density variation (specific galactic coordinates) | Areas near galactic poles have fewer stars |
+
+## 2. Image Generation Tests
+
+The image generation component has comprehensive tests for realistic image synthesis, including camera simulation, atmospheric effects, and astronomical phenomena.
+
+### 2.1 Unit Tests (ImageGenerationTests)
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Project star should convert star coordinates to pixel coordinates` | Tests star projection | Star at center of field projects to center of image |
+| `Project star with rotation should rotate star position` | Tests rotator effects | 90° rotation properly repositions stars |
+| `Get visible stars should return stars in field of view` | Tests field of view calculation | Returns only stars visible in current FOV |
+| `Apply seeing to star should spread star light based on seeing` | Tests atmospheric seeing | Poorer seeing increases FWHM proportionally |
+| `Render star should add light to image matrix` | Tests PSF rendering | Star light spreads correctly to surrounding pixels |
+| `Apply sensor noise should add realistic noise` | Tests sensor noise | Noise patterns are realistic |
+| `Apply binning should combine adjacent pixels` | Tests binning | Properly combines pixels at specified binning factor |
+| `Generate image should create realistic synthetic image` | Tests full image generation | Produces realistic star field image |
+
+### 2.2 Property-Based Tests (ImageGenerationPropertyTests)
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Image dimensions should match camera dimensions` | Tests image dimensions | Image size matches camera dimensions |
+| `Stars in center of field should be in center of image` | Tests star positioning | Stars project to correct positions |
+| `Poor seeing should reduce peak brightness of stars` | Tests seeing effects | Worse seeing reduces peak brightness |
+| `Image brightness should be proportional to exposure time` | Tests exposure effects | Brightness scales with exposure time |
+| `Cloud coverage should reduce image brightness` | Tests cloud effects | Clouds reduce overall brightness |
+| `Binning should preserve total light` | Tests binning conservation | Total light is preserved during binning |
+| `Satellite trail should create a line of bright pixels` | Tests satellite trail | Trail forms a linear pattern |
+| `Adding sensor noise should not change mean pixel value significantly` | Tests noise bias | Noise doesn't significantly shift mean values |
+| `Sensor noise should add appropriate variance` | Tests noise variance | Noise variance related to shot noise and read noise |
+
+## 3. Proposed Mount Simulation Tests
+
+The following tests are recommended for the upcoming Mount Simulation component.
+
+### 3.1 Basic Mount Functionality Tests
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Mount initialization should have correct default values` | Test initial state | Verify tracking rate, position, errors are properly initialized |
+| `Slew to coordinates should update mount position` | Test basic slewing | Mount reaches target coordinates |
+| `Slew rate should affect time to reach target` | Test slew speed | Higher rates complete slewing faster |
+| `Tracking should maintain position relative to sky` | Test tracking | Stars remain stationary during tracking |
+| `Stopping tracking should cause stars to drift` | Test tracking halt | Stars drift at sidereal rate when tracking stops |
+| `Mount reports correct ASCOM status during operations` | Test status reporting | Status flags (slewing, tracking) are accurate |
+
+### 3.2 Mount Error Simulation Tests
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Periodic error should oscillate around true position` | Test periodic error | Position oscillates with specified amplitude and period |
+| `Polar alignment error should cause field rotation` | Test alignment error | Field rotates at rate proportional to alignment error |
+| `Polar alignment error should cause declination drift` | Test alignment drift | Declination drifts over time with alignment error |
+| `Cable snag should cause sudden position change` | Test cable snags | Position jumps when cable snag occurs |
+| `Guide commands should correctly adjust position` | Test guiding | Mount responds correctly to pulse-guide commands |
+| `Backlash should delay direction changes` | Test backlash | Direction changes have appropriate delay |
+
+### 3.3 Mount Property-Based Tests
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Mount position error should be within acceptable limits` | Test position accuracy | Position error within typical mount precision |
+| `Periodic error should average to zero over complete period` | Test error balance | Error sums to zero over full period |
+| `Slewing to valid coordinates always succeeds` | Test slew robustness | Slews succeed across coordinate range |
+| `Multiple rapid slew commands handled appropriately` | Test command queueing | Command sequences execute correctly |
+| `Guide pulses below minimum threshold have no effect` | Test minimum pulse | Very small guide pulses ignored |
+| `Guide pulses scale correctly with duration` | Test pulse scaling | Movement proportional to pulse duration |
+| `Simultaneous RA and Dec guide pulses produce correct vector movement` | Test combined guiding | Diagonal movement correct with dual-axis guiding |
+
+### 3.4 Mount Integration Tests
+
+| Test | Description | Verification |
+|------|-------------|--------------|
+| `Star field image shifts correctly during mount movement` | Test image-mount integration | Image position changes match mount movement |
+| `Star trails form correctly during long exposures with tracking off` | Test star trailing | Stars trail proportionally to exposure and tracking differential |
+| `Mount errors affect star positions in generated images` | Test error propagation | Mount errors visible in synthesized images |
+| `ASCOM driver correctly handles client connections and disconnections` | Test client handling | Driver manages client state correctly |
+| `ASCOM PulseGuide commands generate correct mount responses` | Test ASCOM guiding | Mount responds correctly to ASCOM guide commands |
+| `ASCOM client can successfully control the mount` | Test ASCOM integration | Mount responds correctly to standard ASCOM clients |
+
+## 4. Recommended Test Strategies
+
+### 4.1 Time Compression Testing
+
+To effectively test behaviors that occur over long periods:
+
+- Implement a time compression system to accelerate simulation
+- Test hours of tracking in seconds of real time
+- Verify long-period errors (polar alignment drift, periodic error cycles)
+
+### 4.2 Randomized Stress Testing
+
+- Test with random sequences of commands (slew, guide, stop, start)
+- Vary command timing to detect race conditions
+- Inject random errors and verify graceful handling
+
+### 4.3 Real-World Scenario Testing
+
+- Simulate typical astrophotography sessions (alignment, focusing, guiding)
+- Test automated guiding scenarios with synthesized error patterns
+- Compare with actual mount behavior logs from real equipment

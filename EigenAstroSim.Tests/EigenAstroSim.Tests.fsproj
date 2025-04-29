@@ -5,7 +5,7 @@
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="StarFieldTests.fs" />
-        <Compile Include="PropertyBasedTests.fs" />
+        <Compile Include="StarFieldPropertyTests.fs" />
         <Compile Include="ImageGenerationTests.fs" />
         <Compile Include="ImageGenerationPropertyTests.fs" />
     </ItemGroup>

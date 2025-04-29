@@ -31,26 +31,28 @@ The simulator creates a virtual night sky environment with realistic star fields
 The project is organized into the following main components:
 
 - **EigenAstroSim.Domain**: Core domain model and business logic
-  - Star field generation and management
-  - Mount simulation
-  - Camera simulation
-  - Image generation
+  - **Types**: Core domain types
+  - **StarField**: Star field generation and management
+  - **StarFieldGenerator**: Algorithms for creating realistic star distributions
+  - **ImageGeneration**: Synthetic image creation with realistic noise and effects
+  - **Mount**: Mount simulation with tracking and guiding (in progress)
   
 - **EigenAstroSim.Tests**: Comprehensive test suite
-  - Property-based tests
-  - Unit tests
-  - Integration tests
+  - **StarFieldTests**: Unit tests for star field functionality
+  - **PropertyBasedTests**: Property-based tests for star field
+  - **ImageGenerationTests**: Unit tests for image generation
+  - **ImageGenerationPropertyTests**: Property-based tests for image generation
 
 ## Current Status
 
 The project is under active development. Current implementation includes:
 
-- ✅ Core domain types (Star, StarFieldState, etc.)
+- ✅ Core domain types (Star, StarFieldState, MountState, CameraState, etc.)
 - ✅ Star field generation with realistic distributions
 - ✅ Comprehensive test suite for star field functionality
-- 🔄 Image generation (in progress)
-- ⬜ Mount simulation
-- ⬜ Camera simulation
+- ✅ Image generation with PSF rendering, atmospheric effects, and sensor simulation
+- 🔄 Mount simulation (in progress)
+- ⬜ Camera driver simulation
 - ⬜ ASCOM drivers
 - ⬜ UI implementation
 
@@ -58,10 +60,11 @@ The project is under active development. Current implementation includes:
 
 The project follows:
 
-- Functional programming principles with immutable data structures
-- Test-driven development with comprehensive unit and property-based tests
-- Reactive programming patterns using Rx.NET
-- MVVM architecture for UI components
+- **Functional Programming**: Using immutable data structures and function composition
+- **Test-Driven Development**: With comprehensive unit and property-based tests
+- **Reactive Programming**: Using Rx.NET for event-based and asynchronous operations
+- **Message-Based Architecture**: Using message passing for state updates
+- **MVVM Pattern**: For separation of concerns in the UI
 
 ## Getting Started
 
@@ -83,6 +86,36 @@ dotnet build
 dotnet test
 ```
 
+## Component Details
+
+### Star Field Generation
+
+The star field generator creates realistic star distributions with:
+- Magnitude distribution following astronomical power laws
+- Star colors correlated with magnitude (color-magnitude relationship)
+- Density variation based on galactic latitude
+- Persistence of stars when revisiting areas
+
+### Image Generation
+
+The image generator produces realistic synthetic images with:
+- Point spread functions based on seeing conditions
+- Sensor noise (read noise, dark current, shot noise)
+- Cloud coverage effects on star visibility
+- Satellite trails
+- Proper binning
+- Exposure time scaling
+
+### Mount Simulation (In Progress)
+
+The mount simulation will model:
+- Equatorial mount mechanics
+- Tracking and slewing
+- Periodic error
+- Polar alignment error
+- Response to guide commands
+- Cable snags and other common issues
+
 ## Usage
 
 When completed, the application will provide:
@@ -102,3 +135,7 @@ When completed, the application will provide:
 ## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+
+## License
+
+[MIT License](LICENSE)
