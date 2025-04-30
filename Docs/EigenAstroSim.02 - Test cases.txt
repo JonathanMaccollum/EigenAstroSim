@@ -70,78 +70,99 @@ The image generation component has comprehensive tests for realistic image synth
 | `Adding sensor noise should not change mean pixel value significantly` | Tests noise bias | Noise doesn't significantly shift mean values |
 | `Sensor noise should add appropriate variance` | Tests noise variance | Noise variance related to shot noise and read noise |
 
-## 3. Proposed Mount Simulation Tests
+## 3. Mount Simulation Tests
 
-The following tests are recommended for the upcoming Mount Simulation component.
+The following test cases are defined for the Mount Simulation component. Tests that have been implemented are marked with ✅.
 
 ### 3.1 Basic Mount Functionality Tests
 
-| Test | Description | Verification |
-|------|-------------|--------------|
-| `Mount initialization should have correct default values` | Test initial state | Verify tracking rate, position, errors are properly initialized |
-| `Slew to coordinates should update mount position` | Test basic slewing | Mount reaches target coordinates |
-| `Slew rate should affect time to reach target` | Test slew speed | Higher rates complete slewing faster |
-| `Tracking should maintain position relative to sky` | Test tracking | Stars remain stationary during tracking |
-| `Stopping tracking should cause stars to drift` | Test tracking halt | Stars drift at sidereal rate when tracking stops |
-| `Mount reports correct ASCOM status during operations` | Test status reporting | Status flags (slewing, tracking) are accurate |
-| `Meridian flip should correctly reorient the mount` | Test meridian crossing | Mount properly flips when crossing meridian |
-| `Pointing model should be maintained after meridian flip` | Test post-flip accuracy | Pointing accuracy preserved after flip |
+| Test | Status | Description | Verification |
+|------|--------|-------------|--------------|
+| `Mount initialization should have correct default values` | ✅ | Test initial state | Verify tracking rate, position, errors are properly initialized |
+| `Slew to coordinates should update mount position` | ✅ | Test basic slewing | Mount reaches target coordinates |
+| `Slew rate should affect time to reach target` | ✅ | Test slew speed | Higher rates complete slewing faster |
+| `Tracking should maintain position relative to sky` | ✅ | Test tracking | Stars remain stationary during tracking |
+| `Stopping tracking should cause stars to drift` | ✅ | Test tracking halt | Stars drift at sidereal rate when tracking stops |
+| `Mount reports correct status during operations` | ✅ | Test status reporting | Status flags (slewing, tracking) are accurate |
+| `Meridian flip should correctly reorient the mount` | ✅ | Test meridian crossing | Mount properly flips when crossing meridian |
+| `Pointing model should be maintained after meridian flip` | 🔄 | Test post-flip accuracy | Pointing accuracy preserved after flip |
 
 ### 3.2 Mount Error Simulation Tests
 
-| Test | Description | Verification |
-|------|-------------|--------------|
-| `Periodic error should oscillate around true position` | Test periodic error | Position oscillates with specified amplitude and period |
-| `Polar alignment error should cause field rotation` | Test alignment error | Field rotates at rate proportional to alignment error |
-| `Polar alignment error should cause declination drift` | Test alignment drift | Declination drifts over time with alignment error |
-| `Cable snag should cause sudden position change` | Test cable snags | Position jumps when cable snag occurs |
-| `Guide commands should correctly adjust position` | Test guiding | Mount responds correctly to pulse-guide commands |
-| `Dec backlash should be properly modeled` | Test Dec backlash | Direction changes in Dec show appropriate delay |
-| `RA backlash should be minimized during normal tracking` | Test RA backlash during tracking | RA backlash effects should be minimal during west tracking |
-| `RA backlash should appear when reversing direction` | Test RA directional backlash | Eastward movements show backlash effects |
-| `Backlash compensation should operate correctly` | Test backlash compensation | Compensation algorithms reduce effective backlash |
+| Test | Status | Description | Verification |
+|------|--------|-------------|--------------|
+| `Periodic error should oscillate around true position` | ✅ | Test periodic error | Position oscillates with specified amplitude and period |
+| `Polar alignment error should cause field rotation` | 🔄 | Test alignment error | Field rotates at rate proportional to alignment error |
+| `Polar alignment error should cause declination drift` | ✅ | Test alignment drift | Declination drifts over time with alignment error |
+| `Cable snag should cause sudden position change` | ✅ | Test cable snags | Position jumps when cable snag occurs |
+| `Guide commands should correctly adjust position` | ✅ | Test guiding | Mount responds correctly to pulse-guide commands |
+| `Dec backlash should be properly modeled` | ✅ | Test Dec backlash | Direction changes in Dec show appropriate delay |
+| `RA backlash should be minimized during normal tracking` | 🔄 | Test RA backlash during tracking | RA backlash effects should be minimal during west tracking |
+| `RA backlash should appear when reversing direction` | 🔄 | Test RA directional backlash | Eastward movements show backlash effects |
+| `Backlash compensation should operate correctly` | 🔄 | Test backlash compensation | Compensation algorithms reduce effective backlash |
 
 ### 3.3 Mount Property-Based Tests
 
-| Test | Description | Verification |
-|------|-------------|--------------|
-| `Mount position error should be within acceptable limits` | Test position accuracy | Position error within typical mount precision |
-| `Periodic error should average to zero over complete period` | Test error balance | Error sums to zero over full period |
-| `Slewing to valid coordinates always succeeds` | Test slew robustness | Slews succeed across coordinate range |
-| `Multiple rapid slew commands handled appropriately` | Test command queueing | Command sequences execute correctly |
-| `Guide pulses below minimum threshold have no effect` | Test minimum pulse | Very small guide pulses ignored |
-| `Guide pulses scale correctly with duration` | Test pulse scaling | Movement proportional to pulse duration |
-| `Simultaneous RA and Dec guide pulses produce correct vector movement` | Test combined guiding | Diagonal movement correct with dual-axis guiding |
-| `Dec backlash should be greater than RA backlash during tracking` | Test differential backlash | Dec shows more pronounced backlash effects than RA during tracking |
-| `Eastern RA guide pulses should show lag compared to western pulses` | Test directional guide response | Eastern pulses delayed by backlash gap, western pulses immediate |
-| `Side of pier should affect Dec guide direction` | Test pier side guiding | Dec guide directions flip after meridian flip |
-| `Multiple RA direction reversals should consistently show backlash` | Test backlash repeatability | Consistent backlash gap observed in multiple direction changes |
-| `Extended tracking should minimize RA backlash effects` | Test tracking backlash reduction | RA backlash effects diminish after extended tracking in one direction |
-| `Consecutive west-to-east-to-west movements should show predictable backlash patterns` | Test cumulative backlash behavior | Direction change effects should be consistent and predictable |
+| Test | Status | Description | Verification |
+|------|--------|-------------|--------------|
+| `Mount position error should be within acceptable limits` | ✅ | Test position accuracy | Position error within typical mount precision |
+| `Periodic error should average to zero over complete period` | ✅ | Test error balance | Error sums to zero over full period |
+| `Slewing to valid coordinates always succeeds` | ✅ | Test slew robustness | Slews succeed across coordinate range |
+| `Multiple rapid slew commands handled appropriately` | 🔄 | Test command queueing | Command sequences execute correctly |
+| `Guide pulses below minimum threshold have no effect` | ✅ | Test minimum pulse | Very small guide pulses ignored |
+| `Guide pulses scale correctly with duration` | ✅ | Test pulse scaling | Movement proportional to pulse duration |
+| `Simultaneous RA and Dec guide pulses produce correct vector movement` | ✅ | Test combined guiding | Diagonal movement correct with dual-axis guiding |
+| `Dec backlash should be greater than RA backlash during tracking` | ✅ | Test differential backlash | Dec shows more pronounced backlash effects than RA during tracking |
+| `Eastern RA guide pulses should show lag compared to western pulses` | 🔄 | Test directional guide response | Eastern pulses delayed by backlash gap, western pulses immediate |
+| `Side of pier should affect Dec guide direction` | ✅ | Test pier side guiding | Dec guide directions flip after meridian flip |
+| `Multiple RA direction reversals should consistently show backlash` | 🔄 | Test backlash repeatability | Consistent backlash gap observed in multiple direction changes |
+| `Extended tracking should minimize RA backlash effects` | 🔄 | Test tracking backlash reduction | RA backlash effects diminish after extended tracking in one direction |
+| `Consecutive west-to-east-to-west movements should show predictable backlash patterns` | 🔄 | Test cumulative backlash behavior | Direction change effects should be consistent and predictable |
 
 ### 3.4 Meridian Flip and Side-of-Pier Tests
 
-| Test | Description | Verification |
-|------|-------------|--------------|
-| `Meridian flip should reverse Dec motor direction` | Test motor direction | Dec motor drives in opposite direction after flip |
-| `Meridian flip should maintain pointing accuracy` | Test pointing continuity | Target object remains centered after flip |
-| `Image orientation should rotate 180 degrees after flip` | Test image rotation | Image correctly rotated after meridian flip |
-| `Guide calibration should adjust to side of pier` | Test guide calibration | Guide directions correctly adjusted after flip |
-| `Mount should report correct side of pier` | Test pier side reporting | ASCOM property accurately reflects current configuration |
-| `Repeated crossing of meridian should be handled stably` | Test meridian stability | Multiple crossings handled without issues |
+| Test | Status | Description | Verification |
+|------|--------|-------------|--------------|
+| `Meridian flip should reverse Dec motor direction` | 🔄 | Test motor direction | Dec motor drives in opposite direction after flip |
+| `Meridian flip should maintain pointing accuracy` | 🔄 | Test pointing continuity | Target object remains centered after flip |
+| `Image orientation should rotate 180 degrees after flip` | 🔄 | Test image rotation | Image correctly rotated after meridian flip |
+| `Guide calibration should adjust to side of pier` | 🔄 | Test guide calibration | Guide directions correctly adjusted after flip |
+| `Mount should report correct side of pier` | 🔄 | Test pier side reporting | ASCOM property accurately reflects current configuration |
+| `Repeated crossing of meridian should be handled stably` | 🔄 | Test meridian stability | Multiple crossings handled without issues |
 
 ### 3.5 Mount Integration Tests
 
+| Test | Status | Description | Verification |
+|------|--------|-------------|--------------|
+| `Star field image shifts correctly during mount movement` | 🔄 | Test image-mount integration | Image position changes match mount movement |
+| `Star trails form correctly during long exposures with tracking off` | 🔄 | Test star trailing | Stars trail proportionally to exposure and tracking differential |
+| `Mount errors affect star positions in generated images` | 🔄 | Test error propagation | Mount errors visible in synthesized images |
+| `ASCOM driver correctly handles client connections and disconnections` | 🔄 | Test client handling | Driver manages client state correctly |
+| `ASCOM PulseGuide commands generate correct mount responses` | 🔄 | Test ASCOM guiding | Mount responds correctly to ASCOM guide commands |
+| `ASCOM client can successfully control the mount` | 🔄 | Test ASCOM integration | Mount responds correctly to standard ASCOM clients |
+| `Guide pulses show realistic backlash effect in images` | 🔄 | Test guiding in images | Images reflect proper guiding behavior including backlash |
+| `Meridian flip should update camera/rotator orientation` | 🔄 | Test system integration during flip | All components maintain proper relationships after flip |
+
+### 3.6 Additional Future Tests
+
 | Test | Description | Verification |
 |------|-------------|--------------|
-| `Star field image shifts correctly during mount movement` | Test image-mount integration | Image position changes match mount movement |
-| `Star trails form correctly during long exposures with tracking off` | Test star trailing | Stars trail proportionally to exposure and tracking differential |
-| `Mount errors affect star positions in generated images` | Test error propagation | Mount errors visible in synthesized images |
-| `ASCOM driver correctly handles client connections and disconnections` | Test client handling | Driver manages client state correctly |
-| `ASCOM PulseGuide commands generate correct mount responses` | Test ASCOM guiding | Mount responds correctly to ASCOM guide commands |
-| `ASCOM client can successfully control the mount` | Test ASCOM integration | Mount responds correctly to standard ASCOM clients |
-| `Guide pulses show realistic backlash effect in images` | Test guiding in images | Images reflect proper guiding behavior including backlash |
-| `Meridian flip should update camera/rotator orientation` | Test system integration during flip | All components maintain proper relationships after flip |
+| `Slewing near celestial poles` | Test slewing to coordinates near poles | Proper handling of coordinates near Dec = +/-90° |
+| `Slewing across meridian` | Test slewing across meridian | Meridian flip triggered at appropriate point |
+| `Lunar tracking mode` | Test lunar tracking | Moon centered during lunar tracking |
+| `Solar tracking mode` | Test solar tracking | Sun centered during solar tracking |
+| `Custom tracking rates` | Test custom tracking rates | Object centered with user-defined rates |
+| `Periodic Error Correction recording` | Test PEC recording | Error patterns successfully recorded |
+| `Periodic Error Correction playback` | Test PEC playback | Recorded patterns effectively reduce error |
+| `Multiple cable snags in succession` | Test repeated cable snags | System recovers appropriately after multiple snags |
+| `Mount imbalance effects` | Test imbalance on performance | Tracking affected by simulated imbalance |
+| `Mount settling time after slewing` | Test mount settling | Oscillations dampen according to mount type |
+| `Dithering patterns` | Test dithering for imaging | Small position shifts properly executed |
+| `Long-duration tracking stability` | Test extended tracking | Position maintained accurately over hours |
+
+Legend:
+- ✅ Implemented and passing
+- 🔄 Planned for future implementation
 
 ## 4. Recommended Test Strategies
 

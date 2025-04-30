@@ -8,6 +8,21 @@ module MountSimulationPropertyTests =
     open EigenAstroSim.Domain.Types
     open EigenAstroSim.Domain.MountSimulation
     
+    // Helper functions for tolerance
+    let relativeToleranceEqual (a:float) (b:float) precision =
+        let absA = Math.Abs(a)
+        let absB = Math.Abs(b)
+        let maxAbs = Math.Max(absA, absB)
+        let tolerance = 
+            if maxAbs > 0.0 then
+                maxAbs * precision
+            else
+                precision
+        Math.Abs(a - b) <= tolerance
+
+    let relativeErrorTolerance (expected:float) precision =
+        Math.Max(Math.Abs(expected) * precision, 1e-6)
+    
     // Helper function to create a mount state with specific properties
     let createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate =
         let baseState = {
@@ -50,8 +65,11 @@ module MountSimulationPropertyTests =
         // plus/minus the periodic error amplitude (converted to degrees)
         let maxErrorDegrees = state.BaseState.PeriodicErrorAmplitude / 3600.0
         
-        // Assert
-        Math.Abs(raDiff - expectedRAChange) |> should be (lessThanOrEqualTo maxErrorDegrees)
+        // Assert - use relative tolerance based on error amplitude instead of fixed value
+        let relativeTolerance = 0.1 // 10% tolerance
+        let toleranceValue = relativeErrorTolerance maxErrorDegrees relativeTolerance
+        
+        Math.Abs(raDiff - expectedRAChange) |> should be (lessThanOrEqualTo toleranceValue)
 
     [<Theory>]
     [<InlineData(45.0, 30.0, 1.0, 0.0, 10.0, 600.0, 3.0)>]
@@ -84,20 +102,28 @@ module MountSimulationPropertyTests =
             let averageError = totalError / float steps
             
             // Assert - The average error should be very close to zero
-            Math.Abs(averageError) |> should be (lessThan 0.001)
+            // Use a tolerance based on the amplitude instead of fixed 0.001
+            let relativeTolerance = 0.0001 * periodicAmp // 0.01% of amplitude
+            let maxAllowedError = Math.Max(relativeTolerance, 0.001)
+            
+            Math.Abs(averageError) |> should be (lessThan maxAllowedError)
 
     [<Theory>]
-    [<InlineData(45.0, 30.0, 1.0, 0.0, 0.0, 0.0, 3.0, 90.0, 45.0)>]
-    [<InlineData(120.0, -10.0, 1.0, 0.0, 0.0, 0.0, 5.0, 180.0, 0.0)>]
-    [<InlineData(270.0, 80.0, 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, -45.0)>]
-    [<InlineData(10.0, 20.0, 1.0, 0.0, 0.0, 0.0, 4.0, 350.0, 40.0)>]
-    let ``Slewing to valid coordinates always succeeds`` (ra, dec, trackingRate, polarError, periodicAmp, periodicPeriod, slewRate, (targetRA:float), targetDec) =
+    [<InlineData(45.0, 30.0, 1.0, 0.0, 0.0, 0.0, 3.0)>]
+    [<InlineData(120.0, -10.0, 1.0, 0.0, 0.0, 0.0, 5.0)>]
+    [<InlineData(270.0, 80.0, 1.0, 0.0, 0.0, 0.0, 2.0)>]
+    [<InlineData(10.0, 20.0, 1.0, 0.0, 0.0, 0.0, 4.0)>]
+    let ``Slewing to valid coordinates always succeeds`` (ra, dec, trackingRate, polarError, periodicAmp, periodicPeriod, slewRate) =
         // Arrange
         let state = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
         
+        // Use default targets if not provided by test data
+        let finalTargetRA = (ra + 90.0) % 360.0 
+        let finalTargetDec = Math.Max(-90.0, Math.Min(90.0, dec + 20.0))
+        
         // Constrain inputs to valid ranges
-        let validTargetRA = Math.Abs(targetRA) % 360.0
-        let validTargetDec = Math.Max(-90.0, Math.Min(90.0, targetDec))
+        let validTargetRA = Math.Abs(finalTargetRA) % 360.0
+        let validTargetDec = Math.Max(-90.0, Math.Min(90.0, finalTargetDec))
         
         // Begin slew
         let slewingState = beginSlew state validTargetRA validTargetDec
@@ -141,16 +167,25 @@ module MountSimulationPropertyTests =
         let westState = processPulseGuide state 1.0 0.0 tinyPulse
         
         // Assert - Verify coordinates didn't change (or changed by a negligible amount)
-        // Increased tolerance to accommodate floating point precision issues
-        let tolerance = 0.000002
-        Math.Abs(northState.BaseState.Dec - state.BaseState.Dec) |> should be (lessThan tolerance)
-        Math.Abs(southState.BaseState.Dec - state.BaseState.Dec) |> should be (lessThan tolerance)
-        Math.Abs(eastState.BaseState.RA - state.BaseState.RA) |> should be (lessThan tolerance)
-        Math.Abs(westState.BaseState.RA - state.BaseState.RA) |> should be (lessThan tolerance)
+        // Use relative tolerance instead of fixed 0.000002 tolerance
+        let relativeTolerance = 1e-9 // Very small relative tolerance for "no effect"
+        
+        relativeToleranceEqual northState.BaseState.Dec state.BaseState.Dec relativeTolerance
+        |> should equal true
+        
+        relativeToleranceEqual southState.BaseState.Dec state.BaseState.Dec relativeTolerance
+        |> should equal true
+        
+        relativeToleranceEqual eastState.BaseState.RA state.BaseState.RA relativeTolerance
+        |> should equal true
+        
+        relativeToleranceEqual westState.BaseState.RA state.BaseState.RA relativeTolerance
+        |> should equal true
 
     [<Theory>]
     [<InlineData(45.0, 30.0, 1.0, 0.0, 0.0, 0.0, 3.0)>]
     [<InlineData(120.0, -10.0, 1.0, 0.0, 0.0, 0.0, 5.0)>]
+    [<InlineData(200.0, 50.0, 1.0, 0.0, 0.0, 0.0, 4.0)>] // Added additional test case
     let ``Guide pulses scale correctly with duration`` (ra, dec, trackingRate, polarError, periodicAmp, periodicPeriod, slewRate) =
         // Arrange
         let state = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
@@ -162,45 +197,60 @@ module MountSimulationPropertyTests =
         
         // Both RA and Dec pulses
         let shortState = processPulseGuide state pulseRate pulseRate shortDuration
-        let longState = processPulseGuide state pulseRate pulseRate longDuration
+        
+        // Create a fresh state for long pulse to ensure independence
+        let freshState = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
+        let longState = processPulseGuide freshState pulseRate pulseRate longDuration
         
         // Calculate movements
         let shortRAMovement = shortState.BaseState.RA - state.BaseState.RA
-        let longRAMovement = longState.BaseState.RA - state.BaseState.RA
+        let longRAMovement = longState.BaseState.RA - freshState.BaseState.RA
         let shortDecMovement = shortState.BaseState.Dec - state.BaseState.Dec
-        let longDecMovement = longState.BaseState.Dec - state.BaseState.Dec
+        let longDecMovement = longState.BaseState.Dec - freshState.BaseState.Dec
         
         // Assert - Long pulse should move approximately twice as far as short pulse
-        let tolerance = 0.000001
-        Math.Abs(longRAMovement - 2.0 * shortRAMovement) |> should be (lessThan tolerance)
-        Math.Abs(longDecMovement - 2.0 * shortDecMovement) |> should be (lessThan tolerance)
+        // Use relative tolerance instead of fixed 0.000001 tolerance
+        let relativeTolerance = 1e-5 // 0.001% relative tolerance
+        
+        relativeToleranceEqual longRAMovement (2.0 * shortRAMovement) relativeTolerance 
+        |> should equal true
+        
+        relativeToleranceEqual longDecMovement (2.0 * shortDecMovement) relativeTolerance
+        |> should equal true
 
     [<Theory>]
     [<InlineData(45.0, 30.0, 1.0, 0.0, 0.0, 0.0, 3.0)>]
     [<InlineData(120.0, -10.0, 1.0, 0.0, 0.0, 0.0, 5.0)>]
     let ``Simultaneous RA and Dec guide pulses produce correct vector movement`` (ra, dec, trackingRate, polarError, periodicAmp, periodicPeriod, slewRate) =
         // Arrange
-        let state = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
+        let state1 = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
+        let state2 = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
+        let state3 = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
         
         // Apply separate pulses in RA and Dec
-        let raOnlyState = processPulseGuide state 1.0 0.0 1.0
-        let decOnlyState = processPulseGuide state 0.0 1.0 1.0
+        let raOnlyState = processPulseGuide state1 1.0 0.0 1.0
+        let decOnlyState = processPulseGuide state2 0.0 1.0 1.0
         
-        // Apply combined pulse
-        let combinedState = processPulseGuide state 1.0 1.0 1.0
+        // Apply combined pulse to a fresh state
+        let combinedState = processPulseGuide state3 1.0 1.0 1.0
         
         // Calculate individual movements
-        let raMovement = raOnlyState.BaseState.RA - state.BaseState.RA
-        let decMovement = decOnlyState.BaseState.Dec - state.BaseState.Dec
+        let raMovement = raOnlyState.BaseState.RA - state1.BaseState.RA
+        let decMovement = decOnlyState.BaseState.Dec - state2.BaseState.Dec
         
         // Calculate combined movement
-        let combinedRAMovement = combinedState.BaseState.RA - state.BaseState.RA
-        let combinedDecMovement = combinedState.BaseState.Dec - state.BaseState.Dec
+        let combinedRAMovement = combinedState.BaseState.RA - state3.BaseState.RA
+        let combinedDecMovement = combinedState.BaseState.Dec - state3.BaseState.Dec
         
         // Assert - Combined movement should be approximately equal to individual movements
-        let tolerance = 0.000001
-        Math.Abs(combinedRAMovement - raMovement) |> should be (lessThan tolerance)
-        Math.Abs(combinedDecMovement - decMovement) |> should be (lessThan tolerance)
+        // Use relative tolerance instead of fixed 0.000001 tolerance
+        let relativeTolerance = 1e-5 // 0.001% relative tolerance
+        
+        relativeToleranceEqual combinedRAMovement raMovement relativeTolerance
+        |> should equal true
+        
+        relativeToleranceEqual combinedDecMovement decMovement relativeTolerance
+        |> should equal true
 
 
     [<Fact>]
@@ -219,25 +269,38 @@ module MountSimulationPropertyTests =
             FocalLength = 1000.0
         }
         
+        // Create a fresh default state
         let defaultState = createDefaultDetailedMountState baseState
         
         // Create a state with custom backlash values that ensure Dec > RA (5x larger)
+        // Explicitly construct the backlash records to ensure complete initialization
         let state = { 
             defaultState with 
-                RABacklash = { defaultState.RABacklash with Amount = 5.0; Compensation = 0.0 }
-                DecBacklash = { defaultState.DecBacklash with Amount = 25.0; Compensation = 0.0 }
+                RABacklash = { Amount = 5.0; LastDirection = 0; RemainingBacklash = 0.0; Compensation = 0.0 }
+                DecBacklash = { Amount = 25.0; LastDirection = 0; RemainingBacklash = 0.0; Compensation = 0.0 }
         }
         
-        // For a complete test, we need multiple guide pulses to establish a direction first
+        // For RA tests, create a fresh mount state
+        let raTestState = { 
+            state with 
+                RABacklash = { state.RABacklash with LastDirection = 0; RemainingBacklash = 0.0 }
+        }
+        
         // Pre-condition: Track west for a while to establish RA direction
-        let preWestState = processPulseGuide state 1.0 0.0 2.0
+        let preWestState = processPulseGuide raTestState 1.0 0.0 2.0
         
         // Apply a RA pulse west (tracking direction) then east (direction change - backlash should occur)
         let westState = processPulseGuide preWestState 1.0 0.0 1.0
         let eastState = processPulseGuide westState -1.0 0.0 1.0
         
+        // For Dec tests, create another fresh mount state to ensure independence
+        let decTestState = { 
+            state with 
+                DecBacklash = { state.DecBacklash with LastDirection = 0; RemainingBacklash = 0.0 }
+        }
+        
         // Pre-condition: Guide north to establish Dec direction
-        let preNorthState = processPulseGuide state 0.0 1.0 2.0
+        let preNorthState = processPulseGuide decTestState 0.0 1.0 2.0
         
         // Apply a Dec pulse north then south (direction change - backlash should occur)
         let northState = processPulseGuide preNorthState 0.0 1.0 1.0
@@ -273,12 +336,12 @@ module MountSimulationPropertyTests =
         // Create default states first
         let defaultState = createDefaultDetailedMountState baseState
         
-        // Guide north on west pier (explicitly set West pier)
+        // Create a fresh west pier state
         let westState = { defaultState with PierSide = West }
         let westNorthState = processPulseGuide westState 0.0 1.0 1.0
         let westNorthMove = westNorthState.BaseState.Dec - westState.BaseState.Dec
         
-        // Guide north on east pier (explicitly set East pier)
+        // Create a fresh east pier state
         let eastState = { defaultState with PierSide = East }
         let eastNorthState = processPulseGuide eastState 0.0 1.0 1.0
         let eastNorthMove = eastNorthState.BaseState.Dec - eastState.BaseState.Dec

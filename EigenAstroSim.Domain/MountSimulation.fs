@@ -195,48 +195,63 @@ module MountSimulation =
             }
             
             newBacklash, actualMovement
-    
-    /// Processes a pulse guide command
+
+    /// Minimum threshold for guide pulses in degrees
+    let minGuideThreshold = 1.0e-6
+
     let processPulseGuide (state: DetailedMountState) raRate decRate durationSec =
         // Calculate the movement amounts
         let rawRAMovement = raRate * durationSec * state.BaseState.SlewRate / 3600.0 // Convert to degrees
         let rawDecMovement = decRate * durationSec * state.BaseState.SlewRate / 3600.0 // Convert to degrees
         
-        // Determine direction
-        let raDirection = Math.Sign(rawRAMovement)
-        let decDirection = Math.Sign(rawDecMovement)
+        // Check if movements are below threshold
+        let effectiveRAMovement = 
+            if Math.Abs(rawRAMovement) < minGuideThreshold then 0.0
+            else rawRAMovement
+            
+        let effectiveDecMovement = 
+            if Math.Abs(rawDecMovement) < minGuideThreshold then 0.0
+            else rawDecMovement
         
-        // Apply backlash
-        let newRABacklash, actualRAMovement = applyBacklash state.RABacklash raDirection rawRAMovement
-        let newDecBacklash, actualDecMovement = applyBacklash state.DecBacklash decDirection rawDecMovement
-        
-        // Adjust Dec movement based on pier side
-        let adjustedDecMovement = 
-            match state.PierSide with
-            | East -> -actualDecMovement  // Invert direction on East pier
-            | West -> actualDecMovement   // Standard direction on West pier
-        
-        // Apply the movements to the mount position
-        let newRA = state.BaseState.RA + actualRAMovement
-        let newDec = state.BaseState.Dec + adjustedDecMovement  // Use adjusted movement
-        
-        // Create new base state
-        let newBaseState = { 
-            state.BaseState with 
-                RA = newRA
-                Dec = newDec
-        }
-        
-        // Return updated state
-        { state with 
-            BaseState = newBaseState
-            RABacklash = newRABacklash
-            DecBacklash = newDecBacklash
-            LastRADirection = if raDirection <> 0 then raDirection else state.LastRADirection
-            LastDecDirection = if decDirection <> 0 then decDirection else state.LastDecDirection
-            TimeOfLastPulseGuide = Some DateTime.UtcNow
-        }
-    
+        // If both movements are zero, return original state UNCHANGED
+        if effectiveRAMovement = 0.0 && effectiveDecMovement = 0.0 then
+            state
+        else
+            // Determine direction based on EFFECTIVE movements, not raw movements
+            let raDirection = Math.Sign(effectiveRAMovement)
+            let decDirection = Math.Sign(effectiveDecMovement)
+            
+            // Apply backlash using EFFECTIVE movements, not raw movements
+            let newRABacklash, actualRAMovement = applyBacklash state.RABacklash raDirection effectiveRAMovement
+            let newDecBacklash, actualDecMovement = applyBacklash state.DecBacklash decDirection effectiveDecMovement
+            
+            // Rest of the function continues as before...
+            // Adjust Dec movement based on pier side
+            let adjustedDecMovement = 
+                match state.PierSide with
+                | East -> -actualDecMovement  // Invert direction on East pier
+                | West -> actualDecMovement   // Standard direction on West pier
+            
+            // Apply the movements to the mount position
+            let newRA = state.BaseState.RA + actualRAMovement
+            let newDec = state.BaseState.Dec + adjustedDecMovement
+            
+            // Create new base state
+            let newBaseState = { 
+                state.BaseState with 
+                    RA = newRA
+                    Dec = newDec
+            }
+            
+            // Return updated state
+            { state with 
+                BaseState = newBaseState
+                RABacklash = newRABacklash
+                DecBacklash = newDecBacklash
+                LastRADirection = if raDirection <> 0 then raDirection else state.LastRADirection
+                LastDecDirection = if decDirection <> 0 then decDirection else state.LastDecDirection
+                TimeOfLastPulseGuide = Some DateTime.UtcNow
+            }        
     /// Begins a slew to the specified coordinates
     let beginSlew (state: DetailedMountState) targetRA targetDec =
         // Set mount to slewing state
