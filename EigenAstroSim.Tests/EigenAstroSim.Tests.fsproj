@@ -8,6 +8,8 @@
         <Compile Include="StarFieldPropertyTests.fs" />
         <Compile Include="ImageGenerationTests.fs" />
         <Compile Include="ImageGenerationPropertyTests.fs" />
+        <Compile Include="MountSimulationTests.fs" />
+        <Compile Include="MountSimulationPropertyTests.fs" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EigenAstroSim.Domain\EigenAstroSim.Domain.fsproj" />

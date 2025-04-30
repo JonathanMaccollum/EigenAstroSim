@@ -6,5 +6,6 @@
     <ItemGroup>
         <Compile Include="Types.fs" />
         <Compile Include="ImageGeneration.fs" />
+        <Compile Include="MountSimulation.fs" />
     </ItemGroup>
 </Project>

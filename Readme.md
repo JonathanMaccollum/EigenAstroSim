@@ -51,8 +51,8 @@ The project is under active development. Current implementation includes:
 - ✅ Star field generation with realistic distributions
 - ✅ Comprehensive test suite for star field functionality
 - ✅ Image generation with PSF rendering, atmospheric effects, and sensor simulation
-- 🔄 Mount simulation (in progress)
-- ⬜ Camera driver simulation
+- ✅ Mount simulation
+- 🔄 Camera driver simulation
 - ⬜ ASCOM drivers
 - ⬜ UI implementation
 
