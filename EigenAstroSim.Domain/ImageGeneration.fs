@@ -174,7 +174,6 @@ module ImageGeneration =
                 image.[i, j] <- image.[i, j] + scaledIntensity * gaussianFactor
         
         image
-    
     /// Add a simulated satellite trail to the image
     let addSatelliteTrail (image: float[,]) (camera: CameraState) =
         let width = Array2D.length1 image
@@ -210,13 +209,17 @@ module ImageGeneration =
         let dy = endY - startY
         let length = Math.Sqrt(float(dx * dx + dy * dy))
         
-        // Satellite trail brightness parameters
-        let trailBrightness = 1000.0 * camera.ExposureTime  // Scale with exposure time
-        let trailWidth = 1.0 + random.NextDouble() * 2.0  // 1-3 pixels
+        // Satellite trail brightness parameters - ensure minimum brightness
+        let minimumBrightness = 2000.0
+        let trailBrightness = Math.Max(minimumBrightness, 1000.0 * camera.ExposureTime)
+        
+        // Ensure minimum trail width for visibility
+        let minimumWidth = 2.5
+        let trailWidth = Math.Max(minimumWidth, 1.0 + random.NextDouble() * 2.0)
         
         // Draw the trail using Bresenham's line algorithm with anti-aliasing
-        // Simplified version for now
-        let numPoints = int (length * 2.0) // Ensure enough points for smooth line
+        // Increased point density for a smoother line
+        let numPoints = int (length * 4.0)
         
         for i = 0 to numPoints do
             let t = float i / float numPoints
@@ -243,7 +246,7 @@ module ImageGeneration =
                     
                     // Add trail contribution to pixel
                     image.[px, py] <- image.[px, py] + trailBrightness * factor
-                    
+                        
         image
     
     /// Apply sensor noise to the image
