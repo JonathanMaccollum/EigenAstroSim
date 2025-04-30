@@ -1,0 +1,63 @@
+<UserControl x:Class="EigenAstroSim.UI.Views.RotatorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    
+    <Border Style="{StaticResource ControlPanelStyle}">
+        <StackPanel>
+            <TextBlock Text="Rotator Controls" Style="{StaticResource GroupHeaderStyle}" />
+            
+            <!-- Position Display -->
+            <Grid Margin="0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="Position:" 
+                           Style="{StaticResource SliderLabelStyle}" />
+                <TextBlock Grid.Column="1">
+                    <Run Text="{Binding Position.Value, StringFormat=F1}" />
+                    <Run Text="°" />
+                </TextBlock>
+            </Grid>
+            
+            <!-- Position Control -->
+            <StackPanel Margin="0,5">
+                <TextBlock Text="Set Position:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0" Maximum="360" 
+                            Value="{Binding Position.Value}"
+                            TickFrequency="45" TickPlacement="BottomRight"
+                            IsSnapToTickEnabled="True" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
+                        <Run Text="{Binding Position.Value, StringFormat=F1}" />
+                        <Run Text="°" />
+                    </TextBlock>
+                </Grid>
+            </StackPanel>
+            
+            <!-- Quick Rotation Buttons - updated with fixed command parameters -->
+            <UniformGrid Rows="1" Columns="4" Margin="0,10,0,0">
+                <Button Content="0°" 
+                        Command="{Binding SetAngle0Command}"
+                        Margin="2" />
+                <Button Content="90°" 
+                        Command="{Binding SetAngle90Command}"
+                        Margin="2" />
+                <Button Content="180°" 
+                        Command="{Binding SetAngle180Command}"
+                        Margin="2" />
+                <Button Content="270°" 
+                        Command="{Binding SetAngle270Command}"
+                        Margin="2" />
+            </UniformGrid>
+        </StackPanel>
+    </Border>
+</UserControl>

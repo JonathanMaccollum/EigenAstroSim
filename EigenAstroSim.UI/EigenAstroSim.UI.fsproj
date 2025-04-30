@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+        <ProjectReference Include="..\EigenAstroSim.Domain\EigenAstroSim.Domain.fsproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FSharp.Control.Reactive" Version="6.1.2" />
+        <PackageReference Include="System.Reactive" Version="6.0.1" />
+    </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <UseWPF>true</UseWPF>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="SimulationEngine.fs" />
+        <Compile Include="Services\SimulationTimerService.fs" />
+        <Compile Include="ViewModels.fs" />
+        <Compile Include="Converters.fs" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,81 @@
+<UserControl x:Class="EigenAstroSim.UI.Views.AtmosphereControlView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    
+    <Border Style="{StaticResource ControlPanelStyle}">
+        <StackPanel>
+            <TextBlock Text="Atmospheric Conditions" Style="{StaticResource GroupHeaderStyle}" />
+            
+            <!-- Seeing Conditions -->
+            <StackPanel Margin="0,5">
+                <TextBlock Text="Seeing Conditions:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0.5" Maximum="5" 
+                            Value="{Binding SeeingCondition.Value}"
+                            TickFrequency="0.5" TickPlacement="BottomRight" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
+                        <Run Text="{Binding SeeingCondition.Value, StringFormat=F1}" />
+                        <Run Text="″" />
+                    </TextBlock>
+                </Grid>
+            </StackPanel>
+            
+            <!-- Cloud Coverage -->
+            <StackPanel Margin="0,10,0,0">
+                <TextBlock Text="Cloud Coverage:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0" Maximum="1" 
+                            Value="{Binding CloudCoverage.Value}"
+                            TickFrequency="0.1" TickPlacement="BottomRight" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right"
+                               Text="{Binding CloudCoverage.Value, Converter={StaticResource PercentageConverter}}" />
+                </Grid>
+            </StackPanel>
+            
+            <!-- Transparency -->
+            <StackPanel Margin="0,10,0,0">
+                <TextBlock Text="Transparency:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0" Maximum="1" 
+                            Value="{Binding Transparency.Value}"
+                            TickFrequency="0.1" TickPlacement="BottomRight" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right"
+                               Text="{Binding Transparency.Value, Converter={StaticResource PercentageConverter}}" />
+                </Grid>
+            </StackPanel>
+            
+            <!-- Preset Weather Conditions - updated with direct commands -->
+            <GroupBox Header="Weather Presets" Margin="0,10,0,0">
+                <UniformGrid Rows="2" Columns="2">
+                    <Button Content="Clear Night" 
+                            Command="{Binding SetClearNightCommand}"
+                            Margin="3" />
+                    <Button Content="Average Seeing" 
+                            Command="{Binding SetAverageSeeingCommand}"
+                            Margin="3" />
+                    <Button Content="Partly Cloudy" 
+                            Command="{Binding SetPartlyCloudyCommand}"
+                            Margin="3" />
+                    <Button Content="Very Cloudy" 
+                            Command="{Binding SetVeryCloudyCommand}"
+                            Margin="3" />
+                </UniformGrid>
+            </GroupBox>
+        </StackPanel>
+    </Border>
+</UserControl>

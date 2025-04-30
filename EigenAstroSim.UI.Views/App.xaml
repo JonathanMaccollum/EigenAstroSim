@@ -1,0 +1,56 @@
+﻿<Application x:Class="EigenAstroSim.UI.Views.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:EigenAstroSim.UI.Views"
+             xmlns:converters="clr-namespace:EigenAstroSim.UI.Converters;assembly=EigenAstroSim.UI"
+        >
+    <Application.Resources>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <converters:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter" />
+        <converters:RAToHMSConverter x:Key="RAToHMSConverter" />
+        <converters:DecToDMSConverter x:Key="DecToDMSConverter" />
+        <converters:PercentageConverter x:Key="PercentageConverter" />
+
+    
+        <Style x:Key="GroupHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="0,5,0,5" />
+        </Style>
+        
+        <Style x:Key="SliderLabelStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="MinWidth" Value="120" />
+        </Style>
+        
+        <Style x:Key="ValueDisplayStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="10,0,0,0" />
+            <Setter Property="MinWidth" Value="80" />
+            <Setter Property="TextAlignment" Value="Right" />
+        </Style>
+        
+        <Style x:Key="ControlPanelStyle" TargetType="Border">
+            <Setter Property="BorderBrush" Value="#AAAAAA" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="Background" Value="#F5F5F5" />
+        </Style>
+        
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="MinWidth" Value="80" />
+        </Style>
+        
+        <Style x:Key="DirectionButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+    </Application.Resources>
+</Application>

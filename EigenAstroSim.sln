@@ -7,6 +7,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "EigenAstroSim.Domain", "Eig
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "EigenAstroSim.Tests", "EigenAstroSim.Tests\EigenAstroSim.Tests.fsproj", "{B7811E5E-503B-4EF4-9445-4E7E530B55CB}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "EigenAstroSim.UI", "EigenAstroSim.UI\EigenAstroSim.UI.fsproj", "{31FCA123-2A57-4958-B3F0-FEFD70AFC360}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EigenAstroSim.UI.Views", "EigenAstroSim.UI.Views\EigenAstroSim.UI.Views.csproj", "{E8EF0357-19B1-439F-9CD6-40B2B4AE1BDD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{B7811E5E-503B-4EF4-9445-4E7E530B55CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7811E5E-503B-4EF4-9445-4E7E530B55CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7811E5E-503B-4EF4-9445-4E7E530B55CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31FCA123-2A57-4958-B3F0-FEFD70AFC360}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31FCA123-2A57-4958-B3F0-FEFD70AFC360}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31FCA123-2A57-4958-B3F0-FEFD70AFC360}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31FCA123-2A57-4958-B3F0-FEFD70AFC360}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8EF0357-19B1-439F-9CD6-40B2B4AE1BDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8EF0357-19B1-439F-9CD6-40B2B4AE1BDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8EF0357-19B1-439F-9CD6-40B2B4AE1BDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8EF0357-19B1-439F-9CD6-40B2B4AE1BDD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,126 @@
+
+<!-- CameraView.xaml -->
+<UserControl x:Class="EigenAstroSim.UI.Views.CameraView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    
+    <Border Style="{StaticResource ControlPanelStyle}">
+        <StackPanel>
+            <TextBlock Text="Camera Controls" Style="{StaticResource GroupHeaderStyle}" />
+            
+            <!-- Exposure Controls -->
+            <StackPanel Margin="0,5">
+                <TextBlock Text="Exposure Time:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0.1" Maximum="10" 
+                            Value="{Binding ExposureTime.Value}"
+                            TickFrequency="0.5" TickPlacement="BottomRight" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
+                        <Run Text="{Binding ExposureTime.Value, StringFormat=F1}" />
+                        <Run Text="s" />
+                    </TextBlock>
+                </Grid>
+                
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button Grid.Column="0" Content="Start Exposure" 
+                            Command="{Binding StartExposureCommand}"
+                            Margin="0,0,5,0"
+                            IsEnabled="{Binding IsExposing.Value, Converter={StaticResource InverseBoolConverter}}" />
+                    
+                    <Button Grid.Column="1" Content="Stop Exposure" 
+                            Command="{Binding StopExposureCommand}"
+                            Margin="5,0,0,0"
+                            IsEnabled="{Binding IsExposing.Value}" />
+                </Grid>
+            </StackPanel>
+            
+            <Rectangle Height="1" Fill="#CCCCCC" Margin="0,10" />
+            
+            <!-- Camera Settings -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Size:" 
+                           Style="{StaticResource SliderLabelStyle}" />
+                <TextBlock Grid.Row="0" Grid.Column="1">
+                    <Run Text="{Binding Width.Value}" />
+                    <Run Text=" x " />
+                    <Run Text="{Binding Height.Value}" />
+                    <Run Text=" px" />
+                </TextBlock>
+                
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Pixel Size:" 
+                           Style="{StaticResource SliderLabelStyle}" />
+                <TextBlock Grid.Row="1" Grid.Column="1">
+                    <Run Text="{Binding PixelSize.Value, StringFormat=F1}" />
+                    <Run Text=" μm" />
+                </TextBlock>
+                
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Binning:" 
+                           Style="{StaticResource SliderLabelStyle}" />
+                <ComboBox Grid.Row="2" Grid.Column="1" 
+                          ItemsSource="{Binding AvailableBinning}" 
+                          SelectedItem="{Binding Binning.Value}"
+                          Margin="0,2"
+                          Width="80"
+                          HorizontalAlignment="Left" />
+            </Grid>
+            
+            <Rectangle Height="1" Fill="#CCCCCC" Margin="0,10" />
+            
+            <!-- Noise Settings -->
+            <StackPanel Margin="0,5">
+                <TextBlock Text="Read Noise:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0" Maximum="20" 
+                            Value="{Binding ReadNoise.Value}"
+                            TickFrequency="1" TickPlacement="BottomRight" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
+                        <Run Text="{Binding ReadNoise.Value, StringFormat=F1}" />
+                        <Run Text=" e-" />
+                    </TextBlock>
+                </Grid>
+                
+                <TextBlock Text="Dark Current:" Margin="0,5,0,0" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0" Maximum="1" 
+                            Value="{Binding DarkCurrent.Value}"
+                            TickFrequency="0.1" TickPlacement="BottomRight" />
+                    <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
+                        <Run Text="{Binding DarkCurrent.Value, StringFormat=F2}" />
+                        <Run Text=" e-/s" />
+                    </TextBlock>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>
