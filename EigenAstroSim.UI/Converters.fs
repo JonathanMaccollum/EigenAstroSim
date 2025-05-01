@@ -131,6 +131,89 @@ type ByteArrayToImageConverter() =
         member this.ConvertBack(value, targetType, parameter, culture) =
             DependencyProperty.UnsetValue
 
+
+/// <summary>
+/// Converts a float array to an Image source for display in the UI
+/// </summary>
+type FloatArrayToImageConverter() =
+    interface IValueConverter with
+        member this.Convert(value, targetType, parameter, culture) =
+            match value with
+            | :? (float[]) as floats when floats.Length > 0 ->
+                try
+                    // Get dimensions from parameter if available, otherwise use default
+                    let width, height = 
+                        match parameter with
+                        | :? string as s ->
+                            let parts = s.Split('x')
+                            if parts.Length = 2 then
+                                try
+                                    let w = Int32.Parse(parts.[0])
+                                    let h = Int32.Parse(parts.[1])
+                                    w, h
+                                with _ -> 800, 600
+                            else
+                                800, 600
+                        | _ -> 800, 600
+                    
+                    // Calculate pixel count and create pixel array
+                    let pixelCount = width * height
+                    let pixelValues = Array.zeroCreate<byte> (pixelCount * 4) // BGRA format (4 bytes per pixel)
+                    
+                    // Find min/max values for normalization
+                    let mutable minVal = Double.MaxValue
+                    let mutable maxVal = Double.MinValue
+                    
+                    // Get min/max for normalization
+                    for i = 0 to Math.Min(floats.Length - 1, pixelCount - 1) do
+                        let value = floats.[i]
+                        if not (Double.IsNaN(value) || Double.IsInfinity(value)) then
+                            minVal <- min minVal value
+                            maxVal <- max maxVal value
+                    
+                    // Calculate range for normalization
+                    let range = maxVal - minVal
+                    
+                    // Convert to BGRA format
+                    for i = 0 to Math.Min(floats.Length - 1, pixelCount - 1) do
+                        let value = floats.[i]
+                        let pixelIdx = i * 4
+                        
+                        // Normalize to 0-255 range
+                        let normalizedValue = 
+                            if range > 0.0 then
+                                int (((value - minVal) / range) * 255.0)
+                            else
+                                128 // Default mid-gray if no range
+                        
+                        let byteValue = byte (Math.Min(Math.Max(normalizedValue, 0), 255))
+                        
+                        // BGRA format (B, G, R, A)
+                        pixelValues.[pixelIdx] <- byteValue     // B
+                        pixelValues.[pixelIdx + 1] <- byteValue // G
+                        pixelValues.[pixelIdx + 2] <- byteValue // R
+                        pixelValues.[pixelIdx + 3] <- 255uy     // A (fully opaque)
+                    
+                    // Create the bitmap
+                    let dpiX, dpiY = 96.0, 96.0
+                    let stride = width * 4 // 4 bytes per pixel (BGRA)
+                    let bitmap = BitmapSource.Create(
+                        width, height, 
+                        dpiX, dpiY, 
+                        PixelFormats.Bgra32, 
+                        null, 
+                        pixelValues, 
+                        stride)
+                    
+                    bitmap :> obj
+                with ex -> 
+                    System.Diagnostics.Debug.WriteLine($"Error converting float array to image: {ex.Message}")
+                    DependencyProperty.UnsetValue
+            | _ -> DependencyProperty.UnsetValue
+        
+        member this.ConvertBack(value, targetType, parameter, culture) =
+            DependencyProperty.UnsetValue
+
 // Converts a right ascension value in degrees to HH:MM:SS.SS format
 type RAToHMSConverter() =
     interface IValueConverter with

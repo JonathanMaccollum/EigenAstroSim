@@ -16,7 +16,7 @@
                            Visibility="{Binding HasImage.Value, Converter={StaticResource InverseBoolConverter}, Mode=OneWay}" />
                 
                 <!-- Image display -->
-                <Image Source="{Binding CurrentImage.Value, Converter={StaticResource ByteArrayToImageConverter}, Mode=OneWay}"
+                <Image Source="{Binding CurrentImage.Value, Converter={StaticResource FloatArrayToImageConverter}, Mode=OneWay}"
                        Stretch="Uniform"
                        Visibility="{Binding HasImage.Value, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
                 

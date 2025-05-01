@@ -8,6 +8,7 @@
         <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <converters:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter" />
+        <converters:FloatArrayToImageConverter x:Key="FloatArrayToImageConverter" />
         <converters:RAToHMSConverter x:Key="RAToHMSConverter" />
         <converters:DecToDMSConverter x:Key="DecToDMSConverter" />
         <converters:PercentageConverter x:Key="PercentageConverter" />
