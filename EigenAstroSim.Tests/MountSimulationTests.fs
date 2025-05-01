@@ -142,29 +142,34 @@ module MountSimulationTests =
         
         // Assert
         fastProgress |> should be (greaterThan slowProgress)
-    
     [<Fact>]
     let ``Tracking should maintain position relative to sky`` () =
         // Arrange
         let state = createTestMountState()
         let initialRA = state.BaseState.RA
         
-        // Act - simulate tracking for 1 hour
+        // Act - simulate tracking for 1 hour with perfect tracking (no periodic error)
         let oneHourLater = state.LastTrackingUpdate.AddHours(1.0)
-        let updatedState = updateMountForTime state oneHourLater
         
-        // Assert - RA should have increased by ~15 degrees (sidereal rate for 1 hour)
-        let expectedRAChange = siderealRate * 3600.0 // Approximately 15 degrees
+        // Ensure perfect tracking for this test
+        let perfectTrackingState = 
+            let newBaseState = { 
+                state.BaseState with 
+                    PeriodicErrorAmplitude = 0.0
+                    PeriodicErrorPeriod = 0.0
+            }
+            { state with BaseState = newBaseState }
         
-        // Use relative tolerance instead of fixed tolerance
-        let relativeTolerance = 0.01 // 1% tolerance
-        relativeToleranceEqual (updatedState.BaseState.RA - initialRA) expectedRAChange relativeTolerance
-        |> should equal true
-    
+        let updatedState = updateMountForTime perfectTrackingState oneHourLater
+        
+        // Assert - RA should remain constant when tracking perfectly
+        updatedState.BaseState.RA |> should equal initialRA
     [<Fact>]
     let ``Stopping tracking should cause stars to drift`` () =
         // Arrange
         let state = createTestMountState()
+        let initialRA = state.BaseState.RA
+        
         // Turn off tracking
         let stateWithTrackingOff = 
             let newBaseState = { state.BaseState with TrackingRate = 0.0 }
@@ -177,8 +182,13 @@ module MountSimulationTests =
         let oneHourLater = state.LastTrackingUpdate.AddHours(1.0)
         let updatedState = updateMountForTime stateWithTrackingOff oneHourLater
         
-        // Assert - RA should not change with tracking off
-        updatedState.BaseState.RA |> should equal stateWithTrackingOff.BaseState.RA
+        // Assert - RA should decrease by ~15 degrees (sidereal rate for 1 hour)
+        let expectedRAChange = -siderealRate * 3600.0  // Negative because stars drift westward
+        
+        // Use relative tolerance for comparison
+        let relativeTolerance = 0.01  // 1% tolerance
+        relativeToleranceEqual (updatedState.BaseState.RA - initialRA) expectedRAChange relativeTolerance
+        |> should equal true
     
     [<Fact>]
     let ``Mount reports correct status during operations`` () =

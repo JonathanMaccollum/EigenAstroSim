@@ -59,17 +59,20 @@ module MountSimulationPropertyTests =
         
         // Calculate the difference in position
         let raDiff = trackedState.BaseState.RA - state.BaseState.RA
-        let expectedRAChange = siderealRate * period
         
-        // The difference should be approximately the expected tracking rate change
-        // plus/minus the periodic error amplitude (converted to degrees)
+        // When tracking properly:
+        // - With perfect tracking, RA should not change
+        // - With periodic error, RA should only change by an amount within the periodic error amplitude
+        
+        // The maximum allowed error in degrees is the periodic error amplitude converted from arcseconds
         let maxErrorDegrees = state.BaseState.PeriodicErrorAmplitude / 3600.0
         
-        // Assert - use relative tolerance based on error amplitude instead of fixed value
+        // Assert - use relative tolerance based on error amplitude
         let relativeTolerance = 0.1 // 10% tolerance
         let toleranceValue = relativeErrorTolerance maxErrorDegrees relativeTolerance
         
-        Math.Abs(raDiff - expectedRAChange) |> should be (lessThanOrEqualTo toleranceValue)
+        // The RA change should be at most the periodic error amplitude
+        Math.Abs(raDiff) |> should be (lessThanOrEqualTo maxErrorDegrees)
 
     [<Theory>]
     [<InlineData(45.0, 30.0, 1.0, 0.0, 10.0, 600.0, 3.0)>]

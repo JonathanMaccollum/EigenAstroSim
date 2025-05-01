@@ -108,17 +108,24 @@ module MountSimulation =
         
         // Ensure LST is positive
         if lst < 0.0 then lst + 24.0 else lst
-    
+
     /// Updates the mount state for the passage of time
     let updateMountForTime (state: DetailedMountState) (currentTime: DateTime) =
+        let timeSpan = currentTime - state.LastTrackingUpdate
+        let elapsedSeconds = timeSpan.TotalSeconds
+        
         if state.BaseState.TrackingRate <= 0.0 then
-            // Not tracking, no update needed
-            state
-        else
-            let timeSpan = currentTime - state.LastTrackingUpdate
-            let elapsedSeconds = timeSpan.TotalSeconds
+            // Not tracking, stars drift (RA decreases)
+            let driftAmount = siderealRate * elapsedSeconds
+            let newRA = state.BaseState.RA - driftAmount  // Subtract because stars drift westward
             
-            // Calculate tracking movement
+            let newBaseState = { state.BaseState with RA = newRA }
+            { state with 
+                BaseState = newBaseState
+                LastTrackingUpdate = currentTime 
+            }
+        else
+            // Calculate tracking rate
             let trackingRate = 
                 match state.TrackingMode with
                 | Sidereal -> siderealRate
@@ -127,13 +134,8 @@ module MountSimulation =
                 | Custom rate -> rate
                 | Off -> 0.0
             
-            let trackingMovement = trackingRate * elapsedSeconds
-            
-            // Update RA position (tracking is in RA only)
-            let newRA = state.BaseState.RA + trackingMovement
-            
+            // For perfect tracking, RA would remain constant, only apply errors
             // Calculate periodic error
-            // Convert elapsed time to phase angle based on the period
             let periodSeconds = state.BaseState.PeriodicErrorPeriod
             if periodSeconds > 0.0 then
                 let phaseChange = (elapsedSeconds / periodSeconds) * 360.0
@@ -145,9 +147,8 @@ module MountSimulation =
                     Math.Sin(newPhase * Math.PI / 180.0)
                 
                 // Apply periodic error to RA
-                let raWithError = newRA + periodicErrorContribution / 3600.0 // Convert arcseconds to degrees
+                let raWithError = state.BaseState.RA + periodicErrorContribution / 3600.0
                 
-                // Update the mount state
                 let newBaseState = { state.BaseState with RA = raWithError }
                 { state with 
                     BaseState = newBaseState
@@ -155,12 +156,8 @@ module MountSimulation =
                     PeriodicErrorPhase = newPhase 
                 }
             else
-                // No periodic error
-                let newBaseState = { state.BaseState with RA = newRA }
-                { state with 
-                    BaseState = newBaseState
-                    LastTrackingUpdate = currentTime 
-                }
+                // No periodic error, RA remains constant
+                { state with LastTrackingUpdate = currentTime }
     
     /// Applies backlash to a movement based on backlash configuration and direction
     let applyBacklash (backlash: AxisBacklash) direction (movementAmount:float) =
