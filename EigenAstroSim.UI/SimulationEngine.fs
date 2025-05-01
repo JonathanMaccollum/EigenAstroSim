@@ -10,6 +10,7 @@ open EigenAstroSim.Domain.StarField
 open EigenAstroSim.Domain.StarFieldGenerator
 open EigenAstroSim.Domain.MountSimulation
 open EigenAstroSim.Domain.ImageGeneration
+open EigenAstroSim.UI.Services
 
 // Message types for the simulation engine
 type Msg =
@@ -207,13 +208,14 @@ type SimulationEngine() =
             detailedMountStateChanged.OnNext(newDetailedMountState)
         
         | SetRotatorPosition angle ->
+            Logger.logf "Processing SetRotatorPosition: {0}" [|angle|]
             let newRotatorState = { state.Rotator with Position = angle; IsMoving = true }
             state <- { state with Rotator = newRotatorState }
             
             // Simulate rotator movement (immediate for now)
             let finalRotatorState = { newRotatorState with IsMoving = false }
             state <- { state with Rotator = finalRotatorState }
-            
+            Logger.logf "Sending RotatorStateChanged notification with Position={0}" [|finalRotatorState.Position|]
             rotatorStateChanged.OnNext(finalRotatorState)
         
         | SetSeeingCondition arcseconds ->
@@ -327,7 +329,9 @@ type SimulationEngine() =
         starFieldChanged.OnNext(initialStarField)
     
     // Public interface
-    member _.PostMessage(msg) = mailbox.Post(msg)
+    member _.PostMessage(msg) = 
+        Logger.log(sprintf "SimulationEngine received message: %A" msg)  // Note the sprintf
+        mailbox.Post(msg)
     member _.MountStateChanged = mountStateChanged.AsObservable()
     member _.DetailedMountStateChanged = detailedMountStateChanged.AsObservable()
     member _.CameraStateChanged = cameraStateChanged.AsObservable()

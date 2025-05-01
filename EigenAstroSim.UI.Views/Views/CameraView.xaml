@@ -1,5 +1,3 @@
-
-<!-- CameraView.xaml -->
 <UserControl x:Class="EigenAstroSim.UI.Views.CameraView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -20,10 +18,10 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Slider Grid.Column="0" Minimum="0.1" Maximum="10" 
-                            Value="{Binding ExposureTime.Value}"
+                            Value="{Binding ExposureTime.Value, Mode=TwoWay}"
                             TickFrequency="0.5" TickPlacement="BottomRight" />
                     <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                        <Run Text="{Binding ExposureTime.Value, StringFormat=F1}" />
+                        <Run Text="{Binding ExposureTime.Value, StringFormat=F1, Mode=OneWay}" />
                         <Run Text="s" />
                     </TextBlock>
                 </Grid>
@@ -37,12 +35,12 @@
                     <Button Grid.Column="0" Content="Start Exposure" 
                             Command="{Binding StartExposureCommand}"
                             Margin="0,0,5,0"
-                            IsEnabled="{Binding IsExposing.Value, Converter={StaticResource InverseBoolConverter}}" />
+                            IsEnabled="{Binding IsExposing.Value, Converter={StaticResource InverseBoolConverter}, Mode=OneWay}" />
                     
                     <Button Grid.Column="1" Content="Stop Exposure" 
                             Command="{Binding StopExposureCommand}"
                             Margin="5,0,0,0"
-                            IsEnabled="{Binding IsExposing.Value}" />
+                            IsEnabled="{Binding IsExposing.Value, Mode=OneWay}" />
                 </Grid>
             </StackPanel>
             
@@ -64,16 +62,16 @@
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Size:" 
                            Style="{StaticResource SliderLabelStyle}" />
                 <TextBlock Grid.Row="0" Grid.Column="1">
-                    <Run Text="{Binding Width.Value}" />
+                    <Run Text="{Binding Width.Value, Mode=OneWay}" />
                     <Run Text=" x " />
-                    <Run Text="{Binding Height.Value}" />
+                    <Run Text="{Binding Height.Value, Mode=OneWay}" />
                     <Run Text=" px" />
                 </TextBlock>
                 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Pixel Size:" 
                            Style="{StaticResource SliderLabelStyle}" />
                 <TextBlock Grid.Row="1" Grid.Column="1">
-                    <Run Text="{Binding PixelSize.Value, StringFormat=F1}" />
+                    <Run Text="{Binding PixelSize.Value, StringFormat=F1, Mode=OneWay}" />
                     <Run Text=" μm" />
                 </TextBlock>
                 
@@ -81,7 +79,7 @@
                            Style="{StaticResource SliderLabelStyle}" />
                 <ComboBox Grid.Row="2" Grid.Column="1" 
                           ItemsSource="{Binding AvailableBinning}" 
-                          SelectedItem="{Binding Binning.Value}"
+                          SelectedItem="{Binding Binning.Value, Mode=TwoWay}"
                           Margin="0,2"
                           Width="80"
                           HorizontalAlignment="Left" />
@@ -98,10 +96,10 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Slider Grid.Column="0" Minimum="0" Maximum="20" 
-                            Value="{Binding ReadNoise.Value}"
+                            Value="{Binding ReadNoise.Value, Mode=TwoWay}"
                             TickFrequency="1" TickPlacement="BottomRight" />
                     <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                        <Run Text="{Binding ReadNoise.Value, StringFormat=F1}" />
+                        <Run Text="{Binding ReadNoise.Value, StringFormat=F1, Mode=OneWay}" />
                         <Run Text=" e-" />
                     </TextBlock>
                 </Grid>
@@ -113,10 +111,10 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Slider Grid.Column="0" Minimum="0" Maximum="1" 
-                            Value="{Binding DarkCurrent.Value}"
+                            Value="{Binding DarkCurrent.Value, Mode=TwoWay}"
                             TickFrequency="0.1" TickPlacement="BottomRight" />
                     <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                        <Run Text="{Binding DarkCurrent.Value, StringFormat=F2}" />
+                        <Run Text="{Binding DarkCurrent.Value, StringFormat=F2, Mode=OneWay}" />
                         <Run Text=" e-/s" />
                     </TextBlock>
                 </Grid>

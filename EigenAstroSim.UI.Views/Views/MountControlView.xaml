@@ -25,17 +25,19 @@
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="RA:" 
                                Style="{StaticResource SliderLabelStyle}" />
                     <TextBlock Grid.Row="0" Grid.Column="1" 
-                               Text="{Binding RA.Value, Converter={StaticResource RAToHMSConverter}}" />
+                               Text="{Binding RA.Value, Converter={StaticResource RAToHMSConverter}, Mode=OneWay}" />
                     
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Dec:" 
                                Style="{StaticResource SliderLabelStyle}" />
                     <TextBlock Grid.Row="1" Grid.Column="1" 
-                               Text="{Binding Dec.Value, Converter={StaticResource DecToDMSConverter}}" />
+                               Text="{Binding Dec.Value, Converter={StaticResource DecToDMSConverter}, Mode=OneWay}" />
                     
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Tracking:" 
                                Style="{StaticResource SliderLabelStyle}" />
                     <CheckBox Grid.Row="2" Grid.Column="1" 
-                              IsChecked="{Binding IsTracking.Value}" 
+                              IsChecked="{Binding IsTracking.Value, Mode=TwoWay}" 
+                              Command="{Binding SetTrackingCommand}"
+                              CommandParameter="{Binding IsTracking.Value, Mode=OneWay}"
                               Content="Enable tracking"
                               VerticalAlignment="Center" />
                 </Grid>
@@ -51,7 +53,7 @@
                 <StackPanel Orientation="Horizontal" Margin="0,5">
                     <TextBlock Text="Slew Speed:" VerticalAlignment="Center" />
                     <ComboBox ItemsSource="{Binding SlewSpeedOptions}" 
-                              SelectedItem="{Binding SelectedSlewSpeed.Value}"
+                              SelectedItem="{Binding SelectedSlewSpeed.Value, Mode=TwoWay}"
                               Margin="10,0"
                               Width="80" />
                     <TextBlock Text="°/sec" VerticalAlignment="Center" />
@@ -97,7 +99,7 @@
                             Style="{StaticResource DirectionButtonStyle}" />
                 </Grid>
                 
-                <!-- Slew To Coordinates input field (added) -->
+                <!-- Slew To Coordinates input field -->
                 <StackPanel Margin="0,10,0,0">
                     <TextBlock Text="Slew to Coordinates:" />
                     <Grid>
@@ -105,11 +107,9 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
                         
                         <TextBox x:Name="CoordinatesTextBox" Grid.Column="0" Margin="0,0,5,0"
+                                 Text="{Binding CoordinatesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  ToolTip="Enter coordinates as 'RA,Dec' in degrees" />
                         
                         <Button Grid.Column="1" Content="Slew" 
@@ -134,11 +134,11 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Slider Grid.Column="0" Minimum="0" Maximum="5" 
-                                Value="{Binding PolarAlignmentError.Value}"
+                                Value="{Binding PolarAlignmentError.Value, Mode=TwoWay}"
                                 TickFrequency="0.5" TickPlacement="BottomRight"
                                 IsSnapToTickEnabled="True" />
                         <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                            <Run Text="{Binding PolarAlignmentError.Value, StringFormat=F1}" />
+                            <Run Text="{Binding PolarAlignmentError.Value, StringFormat=F1, Mode=OneWay}" />
                             <Run Text="°" />
                         </TextBlock>
                     </Grid>
@@ -153,10 +153,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Slider Grid.Column="0" Minimum="0" Maximum="10" 
-                                Value="{Binding PeriodicErrorAmplitude.Value}"
+                                Value="{Binding PeriodicErrorAmplitude.Value, Mode=TwoWay}"
                                 TickFrequency="1" TickPlacement="BottomRight" />
                         <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                            <Run Text="{Binding PeriodicErrorAmplitude.Value, StringFormat=F1}" />
+                            <Run Text="{Binding PeriodicErrorAmplitude.Value, StringFormat=F1, Mode=OneWay}" />
                             <Run Text="″" />
                         </TextBlock>
                     </Grid>
@@ -168,11 +168,11 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Slider Grid.Column="0" Minimum="30" Maximum="600" 
-                                Value="{Binding PeriodicErrorPeriod.Value}"
+                                Value="{Binding PeriodicErrorPeriod.Value, Mode=TwoWay}"
                                 TickFrequency="30" TickPlacement="BottomRight"
                                 IsSnapToTickEnabled="True" />
                         <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                            <Run Text="{Binding PeriodicErrorPeriod.Value, StringFormat=F0}" />
+                            <Run Text="{Binding PeriodicErrorPeriod.Value, StringFormat=F0, Mode=OneWay}" />
                             <Run Text="s" />
                         </TextBlock>
                     </Grid>

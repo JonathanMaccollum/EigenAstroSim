@@ -19,7 +19,7 @@
                 <TextBlock Grid.Column="0" Text="Position:" 
                            Style="{StaticResource SliderLabelStyle}" />
                 <TextBlock Grid.Column="1">
-                    <Run Text="{Binding Position.Value, StringFormat=F1}" />
+                    <Run Text="{Binding Position.Value, StringFormat=F1, Mode=OneWay}" />
                     <Run Text="°" />
                 </TextBlock>
             </Grid>
@@ -33,17 +33,17 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Slider Grid.Column="0" Minimum="0" Maximum="360" 
-                            Value="{Binding Position.Value}"
+                            Value="{Binding Position.Value, Mode=TwoWay}"
                             TickFrequency="45" TickPlacement="BottomRight"
                             IsSnapToTickEnabled="True" />
                     <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
-                        <Run Text="{Binding Position.Value, StringFormat=F1}" />
+                        <Run Text="{Binding Position.Value, StringFormat=F1, Mode=OneWay}" />
                         <Run Text="°" />
                     </TextBlock>
                 </Grid>
             </StackPanel>
             
-            <!-- Quick Rotation Buttons - updated with fixed command parameters -->
+            <!-- Quick Rotation Buttons -->
             <UniformGrid Rows="1" Columns="4" Margin="0,10,0,0">
                 <Button Content="0°" 
                         Command="{Binding SetAngle0Command}"

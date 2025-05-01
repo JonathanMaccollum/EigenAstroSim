@@ -1,5 +1,3 @@
-
-<!-- StarFieldView.xaml -->
 <UserControl x:Class="EigenAstroSim.UI.Views.StarFieldView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -15,12 +13,12 @@
                 <TextBlock Text="Star Field Display (Waiting for image...)" 
                            HorizontalAlignment="Center" 
                            VerticalAlignment="Center"
-                           Visibility="{Binding HasImage.Value, Converter={StaticResource InverseBoolConverter}, ConverterParameter=InverseVisibility}" />
+                           Visibility="{Binding HasImage.Value, Converter={StaticResource InverseBoolConverter}, Mode=OneWay}" />
                 
                 <!-- Image display -->
-                <Image Source="{Binding CurrentImage.Value, Converter={StaticResource ByteArrayToImageConverter}}"
+                <Image Source="{Binding CurrentImage.Value, Converter={StaticResource ByteArrayToImageConverter}, Mode=OneWay}"
                        Stretch="Uniform"
-                       Visibility="{Binding HasImage.Value, Converter={StaticResource BoolToVisibilityConverter}}" />
+                       Visibility="{Binding HasImage.Value, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" />
                 
                 <!-- Overlay with control buttons -->
                 <StackPanel Orientation="Horizontal" 
