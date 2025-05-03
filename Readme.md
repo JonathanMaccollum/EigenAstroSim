@@ -53,8 +53,8 @@ The project is under active development. Current implementation includes:
 - ✅ Image generation with PSF rendering, atmospheric effects, and sensor simulation
 - ✅ Mount simulation
 - 🔄 Camera driver simulation
+- 🔄 UI implementation
 - ⬜ ASCOM drivers
-- ⬜ UI implementation
 
 ## Development Approach
 
@@ -72,7 +72,7 @@ The project follows:
 
 - .NET 8 SDK
 - ASCOM Platform (latest version)
-- Visual Studio 2022 or JetBrains Rider (recommended for F# development)
+- Visual Studio Code
 
 ### Building the Project
 
@@ -84,6 +84,11 @@ dotnet build
 
 ```bash
 dotnet test
+```
+### Running Tests
+
+```bash
+dotnet run --project .\EigenAstroSim.UI.Views\EigenAstroSim.UI.Views.csproj
 ```
 
 ## Component Details
