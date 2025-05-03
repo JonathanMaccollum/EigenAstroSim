@@ -314,3 +314,174 @@ type PercentageConverter() =
                 with
                 | _ -> DependencyProperty.UnsetValue
             | _ -> DependencyProperty.UnsetValue
+
+/// <summary>
+/// Converts a float array to an Image source with user-controlled stretching
+/// </summary>
+type FloatArrayToImageWithStretchConverter() =
+    interface IValueConverter with
+        member this.Convert(value, targetType, parameter, culture) =
+            match value with
+            | :? (float[]) as floats when floats.Length > 0 ->
+                try
+                    // Parse parameters: format "width,height,logStretch,blackPoint,whitePoint"
+                    let width, height, logStretch, blackPoint, whitePoint = 
+                        match parameter with
+                        | :? string as s ->
+                            let parts = s.Split(',')
+                            if parts.Length >= 5 then
+                                try
+                                    let w = Int32.Parse(parts.[0])
+                                    let h = Int32.Parse(parts.[1])
+                                    let ls = Double.Parse(parts.[2])
+                                    let bp = Double.Parse(parts.[3])
+                                    let wp = Double.Parse(parts.[4])
+                                    w, h, ls, bp, wp
+                                with _ -> 800, 600, 1.0, 0.0, 1.0
+                            else
+                                800, 600, 1.0, 0.0, 1.0
+                        | _ -> 800, 600, 1.0, 0.0, 1.0
+                    
+                    let pixelCount = width * height
+                    let pixelValues = Array.zeroCreate<byte> (pixelCount * 4)
+                    
+                    // Convert to BGRA format with user-controlled stretching
+                    for i = 0 to Math.Min(floats.Length - 1, pixelCount - 1) do
+                        let value = floats.[i]
+                        let pixelIdx = i * 4
+                        
+                        // Apply black point
+                        let adjustedValue = max 0.0 (value - blackPoint)
+                        
+                        // Apply logarithmic stretch
+                        let stretchedValue = 
+                            if logStretch > 0.0 then
+                                if value <= blackPoint then 0.0
+                                else 
+                                    let logVal = Math.Log10(adjustedValue + 1.0)
+                                    logVal * logStretch
+                            else
+                                adjustedValue
+                        
+                        // Scale to 0-255 range using white point
+                        let finalValue = 
+                            let normalized = stretchedValue / whitePoint
+                            int (Math.Min(Math.Max(normalized * 255.0, 0.0), 255.0))
+                        
+                        let byteValue = byte finalValue
+                        
+                        // BGRA format
+                        pixelValues.[pixelIdx] <- byteValue
+                        pixelValues.[pixelIdx + 1] <- byteValue
+                        pixelValues.[pixelIdx + 2] <- byteValue
+                        pixelValues.[pixelIdx + 3] <- 255uy
+                    
+                    // Create the bitmap
+                    let dpiX, dpiY = 96.0, 96.0
+                    let stride = width * 4
+                    let bitmap = BitmapSource.Create(
+                        width, height, 
+                        dpiX, dpiY, 
+                        PixelFormats.Bgra32, 
+                        null, 
+                        pixelValues, 
+                        stride)
+                    
+                    bitmap :> obj
+                with ex -> 
+                    System.Diagnostics.Debug.WriteLine($"Error converting float array to image: {ex.Message}")
+                    DependencyProperty.UnsetValue
+            | _ -> DependencyProperty.UnsetValue
+        
+        member this.ConvertBack(value, targetType, parameter, culture) =
+            DependencyProperty.UnsetValue
+
+type FloatArrayWithStretchMultiConverter() =
+    interface IMultiValueConverter with
+        member this.Convert(values, targetType, parameter, culture) =
+            if values.Length >= 6 && 
+               values.[0] :? float[] && 
+               values.[1] :? int && 
+               values.[2] :? int && 
+               values.[3] :? double && 
+               values.[4] :? double && 
+               values.[5] :? double then
+                
+                let floats = values.[0] :?> float[]
+                let width = values.[1] :?> int
+                let height = values.[2] :?> int
+                let logStretch = values.[3] :?> double
+                let blackPointPercent = values.[4] :?> double // 0-100
+                let whitePointPercent = values.[5] :?> double // 0-100
+                
+                try
+                    let pixelCount = width * height
+                    let pixelValues = Array.zeroCreate<byte> (pixelCount * 4)
+                    
+                    // Find the actual range of values
+                    let mutable maxVal = 0.0
+                    for i = 0 to Math.Min(floats.Length - 1, pixelCount - 1) do
+                        let value = floats.[i]
+                        if value > maxVal then
+                            maxVal <- value
+                    
+                    // Calculate black and white point values based on actual range
+                    let blackPointValue = (blackPointPercent / 100.0) * maxVal
+                    let whitePointValue = (whitePointPercent / 100.0) * maxVal
+                    
+                    System.Diagnostics.Debug.WriteLine($"Actual max value: {maxVal}, Black point: {blackPointValue}, White point: {whitePointValue}")
+                    
+                    // Convert to BGRA format with user-controlled stretching
+                    for i = 0 to Math.Min(floats.Length - 1, pixelCount - 1) do
+                        let value = floats.[i]
+                        let pixelIdx = i * 4
+                        
+                        // Apply black point and white point
+                        let clippedValue = 
+                            if value <= blackPointValue then 0.0
+                            elif value >= whitePointValue then 1.0
+                            elif whitePointValue <= blackPointValue then 0.0 // Avoid division by zero
+                            else 
+                                // Scale value between black and white points to 0-1 range
+                                (value - blackPointValue) / (whitePointValue - blackPointValue)
+                        
+                        // Apply logarithmic stretch (only if value > 0)
+                        let stretchedValue = 
+                            if logStretch > 0.0 && clippedValue > 0.0 then
+                                // Apply logarithmic transform
+                                let stretchFactor = 1.0 + logStretch
+                                let logVal = Math.Log(1.0 + clippedValue * (stretchFactor - 1.0)) / Math.Log(stretchFactor)
+                                logVal
+                            else
+                                clippedValue
+                        
+                        // Convert to 0-255 byte range
+                        let finalValue = int (Math.Round(stretchedValue * 255.0))
+                        let byteValue = byte (Math.Max(0, Math.Min(255, finalValue)))
+                        
+                        // BGRA format
+                        pixelValues.[pixelIdx] <- byteValue
+                        pixelValues.[pixelIdx + 1] <- byteValue
+                        pixelValues.[pixelIdx + 2] <- byteValue
+                        pixelValues.[pixelIdx + 3] <- 255uy
+                    
+                    // Create the bitmap
+                    let dpiX, dpiY = 96.0, 96.0
+                    let stride = width * 4
+                    let bitmap = BitmapSource.Create(
+                        width, height, 
+                        dpiX, dpiY, 
+                        PixelFormats.Bgra32, 
+                        null, 
+                        pixelValues, 
+                        stride)
+                    
+                    bitmap :> obj
+                with ex -> 
+                    System.Diagnostics.Debug.WriteLine($"Error converting float array to image: {ex.Message}")
+                    DependencyProperty.UnsetValue
+            else
+                DependencyProperty.UnsetValue
+        
+        member this.ConvertBack(value, targetTypes, parameter, culture) =
+            Array.init targetTypes.Length (fun _ -> DependencyProperty.UnsetValue)

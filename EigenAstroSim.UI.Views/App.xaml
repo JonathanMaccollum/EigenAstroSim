@@ -12,8 +12,8 @@
         <converters:RAToHMSConverter x:Key="RAToHMSConverter" />
         <converters:DecToDMSConverter x:Key="DecToDMSConverter" />
         <converters:PercentageConverter x:Key="PercentageConverter" />
+        <converters:FloatArrayWithStretchMultiConverter x:Key="FloatArrayWithStretchMultiConverter" />
 
-    
         <Style x:Key="GroupHeaderStyle" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Margin" Value="0,5,0,5" />

@@ -603,13 +603,27 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
         if disposing then
             subscription.Dispose()
 
-// Star Field View Model with updated commands
 type StarFieldViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
     
     // Observable state
     let currentImage = ReactiveProperty<float[]>()
     let hasImage = ReactiveProperty<bool>()
+    
+    // Stretch parameters with adjusted defaults
+    let logarithmicStretch = ReactiveProperty<double>(0)
+    let blackPoint = ReactiveProperty<double>(0.0)
+    let whitePoint = ReactiveProperty<double>(100.0)
+    let imageWidth = ReactiveProperty<int>(800)
+    let imageHeight = ReactiveProperty<int>(600)
+    
+    // Subscribe to camera state to get correct dimensions
+    let cameraSubscription = 
+        simulationEngine.CameraStateChanged
+            .ObserveOn(SynchronizationContext.Current)
+            .Subscribe(fun cameraState ->
+                imageWidth.Value <- cameraState.Width
+                imageHeight.Value <- cameraState.Height)
     
     // Subscribe to new images
     let imageSubscription = 
@@ -618,12 +632,17 @@ type StarFieldViewModel(simulationEngine: SimulationEngine) =
             .Subscribe(fun image ->
                 currentImage.Value <- image
                 hasImage.Value <- true)
-    
+
     // Properties
     member _.CurrentImage = currentImage
     member _.HasImage = hasImage
+    member _.LogarithmicStretch = logarithmicStretch
+    member _.BlackPoint = blackPoint
+    member _.WhitePoint = whitePoint
+    member _.ImageWidth = imageWidth
+    member _.ImageHeight = imageHeight
     
-    // Commands - updated to use createSimple for unit commands
+    // Commands
     member _.GenerateSatelliteTrailCommand = ReactiveCommand.createSimple (fun () -> 
         Logger.log "Generating satellite trail"
         simulationEngine.PostMessage(GenerateSatelliteTrail))
@@ -631,6 +650,7 @@ type StarFieldViewModel(simulationEngine: SimulationEngine) =
     override _.Dispose(disposing) =
         if disposing then
             imageSubscription.Dispose()
+            cameraSubscription.Dispose()
 
 // Main View Model with all the sub-view models
 type MainViewModel(simulationEngine: SimulationEngine) =

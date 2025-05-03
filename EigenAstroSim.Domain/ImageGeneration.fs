@@ -69,10 +69,19 @@ module ImageGeneration =
         // Calculate the field of view
         let (fovWidth, fovHeight) = calculateFOV camera mount.FocalLength
         
-        // Add some margin to ensure stars just outside FOV are included (they might be partially visible)
+        // Add some margin to ensure stars just outside FOV are included
         let margin = 0.5 // degrees
         
-        // Filter stars by field of view
+        let baseLimitingMag = 10.0
+        
+        // Exposure time increases limiting magnitude logarithmically
+        // Every 2.5x increase in exposure time gives ~1 magnitude deeper
+        let exposureBoost = Math.Log10(Math.Max(camera.ExposureTime, 0.1)) * 20.5
+        
+        // Calculate effective limiting magnitude
+        let effectiveLimitingMag = baseLimitingMag + exposureBoost
+        
+        // Filter stars by field of view and magnitude limit
         starField.Stars
         |> Map.toArray
         |> Array.map snd
@@ -82,8 +91,10 @@ module ImageGeneration =
             let deltaDec = star.Dec - mount.Dec
             
             // Check if star is within field of view plus margin
+            // AND if star is brighter than the magnitude limit
             Math.Abs(deltaRA) <= fovWidth / 2.0 + margin && 
-            Math.Abs(deltaDec) <= fovHeight / 2.0 + margin)
+            Math.Abs(deltaDec) <= fovHeight / 2.0 + margin &&
+            star.Magnitude <= effectiveLimitingMag)
     
     /// Apply seeing effects to a star, returning (x, y, magnitude, fwhm, intensity)
     let applySeeingToStar (x, y, mag, color) (seeing: float) =
@@ -143,14 +154,14 @@ module ImageGeneration =
         
         // Linear interpolation between clear and cloudy limiting magnitudes
         cloudLimitingMag + (1.0 - cloudCoverage) * (baseLimitingMag - cloudLimitingMag)
-    
-    /// Render a star onto the image
+        
     let renderStar (x, y, mag, fwhm, intensity) (image: float[,]) (exposureTime: float) =
         // Convert FWHM to sigma for Gaussian
         let sigma = fwhm / 2.355
         
-        // Star brightness scales linearly with exposure time
-        let scaledIntensity = intensity * exposureTime * 1000.0 // Further increased scale factor
+        // Star brightness should scale linearly with exposure time
+        // Adjust the intensity based on exposure duration
+        let scaledIntensity = intensity * exposureTime * 1000.0 
         
         // Determine rendering area (limit to a reasonable radius to improve performance)
         let maxRadius = Math.Ceiling(sigma * 3.0) // 3 sigma captures 99.7% of the light
