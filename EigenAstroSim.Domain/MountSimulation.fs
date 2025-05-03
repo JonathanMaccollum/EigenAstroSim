@@ -125,15 +125,6 @@ module MountSimulation =
                 LastTrackingUpdate = currentTime 
             }
         else
-            // Calculate tracking rate
-            let trackingRate = 
-                match state.TrackingMode with
-                | Sidereal -> siderealRate
-                | Lunar -> siderealRate * 0.966
-                | Solar -> siderealRate * 0.9863
-                | Custom rate -> rate
-                | Off -> 0.0
-            
             // For perfect tracking, RA would remain constant, only apply errors
             // Calculate periodic error
             let periodSeconds = state.BaseState.PeriodicErrorPeriod

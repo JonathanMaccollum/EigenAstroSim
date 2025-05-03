@@ -97,39 +97,11 @@ module ImageGeneration =
             star.Magnitude <= effectiveLimitingMag)
     
     /// Apply seeing effects to a star, returning (x, y, magnitude, fwhm, intensity)
-    let applySeeingToStar (x, y, mag, color) (seeing: float) =
+    let applySeeingToStar (x, y, mag) (seeing: float) =
         // Calculate the FWHM in pixels based on seeing
         // For a typical guide scope setup, 1 arcsecond might be ~2-4 pixels
         let pixelsPerArcsec = 5.0 // Increased for more pronounced effect
         let fwhmPixels = seeing * pixelsPerArcsec
-        
-        // Convert B-V color index to an RGB color for rendering
-        // This is a simplified approximation to convert from B-V to RGB
-        let tempKelvin = 
-            if color <= 0.0 then
-                // For very blue stars
-                30000.0
-            else
-                // Approximation formula: T = 4600 * ((1 / (0.92 * color + 1.7)) + (1 / (0.92 * color + 0.62)))
-                // Simplified to:
-                4600.0 * (1.0 / (0.92 * color + 0.62))
-        
-        // Convert temperature to RGB (simplified)
-        let rgb =
-            if tempKelvin > 30000.0 then
-                (155, 176, 255) // Very hot (blue)
-            elif tempKelvin > 10000.0 then
-                (170, 191, 255) // Hot (blue-white)
-            elif tempKelvin > 7500.0 then
-                (202, 215, 255) // White
-            elif tempKelvin > 6000.0 then
-                (248, 247, 255) // Yellowish white
-            elif tempKelvin > 5000.0 then
-                (255, 244, 234) // Yellow
-            elif tempKelvin > 3500.0 then
-                (255, 221, 180) // Orange
-            else
-                (255, 183, 134) // Red
         
         // Calculate peak intensity based on magnitude
         // Magnitude scale is logarithmic: a difference of 5 magnitudes = factor of 100 in brightness
@@ -155,7 +127,7 @@ module ImageGeneration =
         // Linear interpolation between clear and cloudy limiting magnitudes
         cloudLimitingMag + (1.0 - cloudCoverage) * (baseLimitingMag - cloudLimitingMag)
         
-    let renderStar (x, y, mag, fwhm, intensity) (image: float[,]) (exposureTime: float) =
+    let renderStar (x, y, fwhm, intensity) (image: float[,]) (exposureTime: float) =
         // Convert FWHM to sigma for Gaussian
         let sigma = fwhm / 2.355
         
@@ -372,8 +344,8 @@ module ImageGeneration =
         // 4. Apply seeing effects
         let seenStars = 
             projectedStars
-            |> Array.map (fun (x, y, mag, color) -> 
-                applySeeingToStar (x, y, mag, color) state.Atmosphere.SeeingCondition)
+            |> Array.map (fun (x, y, mag, _) -> 
+                applySeeingToStar (x, y, mag) state.Atmosphere.SeeingCondition)
         
         // 5. Apply cloud coverage - this implementation combines two approaches:
         // a) Filter out stars too dim to see through clouds
@@ -393,8 +365,8 @@ module ImageGeneration =
         // 6. Render stars onto image
         let starImage = 
             (image, visibleThroughClouds)
-            ||> Array.fold (fun img star -> renderStar star img state.Camera.ExposureTime)
-        
+            ||> Array.fold (fun img (x, y, _, fwhm, intensity) -> 
+                            renderStar (x, y, fwhm, intensity) img state.Camera.ExposureTime)        
         // 7. Add satellite trail if requested
         let imageWithTrail =
             if state.HasSatelliteTrail then 
