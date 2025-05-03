@@ -149,8 +149,8 @@ module ImageGeneration =
         
         // At 100% cloud coverage, only very bright stars (mag < 2) are visible
         // At 0% cloud coverage, use full magnitude range
-        let baseLimitingMag = 15.0
-        let cloudLimitingMag = 2.0
+        let baseLimitingMag = 12.0
+        let cloudLimitingMag = 3.0
         
         // Linear interpolation between clear and cloudy limiting magnitudes
         cloudLimitingMag + (1.0 - cloudCoverage) * (baseLimitingMag - cloudLimitingMag)
@@ -161,7 +161,7 @@ module ImageGeneration =
         
         // Star brightness should scale linearly with exposure time
         // Adjust the intensity based on exposure duration
-        let scaledIntensity = intensity * exposureTime * 1000.0 
+        let scaledIntensity = intensity * exposureTime * 60000.0 
         
         // Determine rendering area (limit to a reasonable radius to improve performance)
         let maxRadius = Math.Ceiling(sigma * 3.0) // 3 sigma captures 99.7% of the light
@@ -221,7 +221,7 @@ module ImageGeneration =
         let length = Math.Sqrt(float(dx * dx + dy * dy))
         
         // Satellite trail brightness parameters - ensure minimum brightness
-        let minimumBrightness = 2000.0
+        let minimumBrightness = 100.0
         let trailBrightness = Math.Max(minimumBrightness, 1000.0 * camera.ExposureTime)
         
         // Ensure minimum trail width for visibility
@@ -332,33 +332,23 @@ module ImageGeneration =
                 binned.[x, y] <- sum / float(binning * binning)
         
         binned
-    
-    /// Convert 2D image array to 1D byte array for client applications
+        
+    /// Convert to byte array without artificial scaling - use realistic astronomical values
     let convertToByteArray (image: float[,]) =
         let width = Array2D.length1 image
         let height = Array2D.length2 image
         
-        // Find maximum value for scaling
-        let mutable maxVal = 0.0
-        for x = 0 to width - 1 do
-            for y = 0 to height - 1 do
-                if image.[x, y] > maxVal then
-                    maxVal <- image.[x, y]
+        // Don't use maximum value for scaling - use fixed 16-bit range
+        let maxPossible = 65535.0
         
-        // Create result array
         let result = Array.zeroCreate (width * height)
         
-        // Apply a more reasonable scaling to prevent capping
-        // Use much higher value range for tests
         for y = 0 to height - 1 do
             for x = 0 to width - 1 do
-                // Don't scale if maxVal is too small to avoid division by near-zero
-                let scaleFactor = 
-                    if maxVal > 10.0 then 10000000.0 / maxVal else 1000000.0
-                
-                // Don't cap values to allow necessary range for test validation
-                let scaledValue = image.[x, y] * scaleFactor
-                result.[y * width + x] <- scaledValue
+                // Values should already be in the proper range for 16-bit data
+                // No scaling needed - just ensure we don't exceed 16-bit range
+                let value = Math.Min(image.[x, y], maxPossible)
+                result.[y * width + x] <- value
         
         result
     

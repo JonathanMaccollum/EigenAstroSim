@@ -418,12 +418,7 @@ type FloatArrayWithStretchMultiConverter() =
                     let pixelCount = width * height
                     let pixelValues = Array.zeroCreate<byte> (pixelCount * 4)
                     
-                    // Find the actual range of values
-                    let mutable maxVal = 0.0
-                    for i = 0 to Math.Min(floats.Length - 1, pixelCount - 1) do
-                        let value = floats.[i]
-                        if value > maxVal then
-                            maxVal <- value
+                    let maxVal = 65535.0
                     
                     // Calculate black and white point values based on actual range
                     let blackPointValue = (blackPointPercent / 100.0) * maxVal

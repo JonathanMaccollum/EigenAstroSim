@@ -2,6 +2,7 @@ namespace EigenAstroSim.UI
 
 open System
 open System.Reactive.Linq
+open System.Reactive.Disposables
 open System.Collections.ObjectModel
 open System.Collections.Generic
 open System.Windows.Input
@@ -179,14 +180,6 @@ module ReactiveCommand =
     // Command creation with typed parameter
     let create (execute: 'T -> unit) =
         ReactiveCommand<'T>(Observable.Return(true), execute)
-    
-    // Command creation with canExecute observable
-    let createWithCanExecute (canExecute: IObservable<bool>) (execute: 'T -> unit) =
-        ReactiveCommand<'T>(canExecute, execute)
-    
-    // Command creation from observable-returning function
-    let createFromObservable (canExecute: IObservable<bool>) (execute: 'T -> IObservable<unit>) =
-        ReactiveCommand<'T>(canExecute, (fun param -> execute param |> Observable.subscribe ignore |> ignore))
 
 // MountViewModel with updated commands
 type MountViewModel(simulationEngine: SimulationEngine) =
@@ -205,13 +198,37 @@ type MountViewModel(simulationEngine: SimulationEngine) =
     let targetRa = ReactiveProperty<float>()
     let targetDec = ReactiveProperty<float>()
     let coordinatesText = ReactiveProperty<string>()
+    let isCableSnagActive = ReactiveProperty<bool>(false)
+    let cableSnagButtonText = ReactiveProperty<string>("Enable Cable Snag")
     
     // Slew speed options (degrees per second)
-    let slewSpeedOptions = [| 0.1; 0.5; 1.0; 2.0; 4.0; 8.0; 16.0; 32.0 |]
+    let slewSpeedOptions = [| 0.5; 1.0; 2.0; 4.0; 8.0; 16.0; 32.0; 64.0; |]
     let selectedSlewSpeed = ReactiveProperty<float>()
-    
-    // Subscribe first, then initialize - prevent race conditions
-    let mountSubscription = 
+    let cleanup = new CompositeDisposable()
+    // In the MountViewModel constructor, add:
+    do
+        polarAlignmentError
+            .AsObservable()
+            .Skip(1)  // Skip the initial value to avoid immediately overwriting
+            .DistinctUntilChanged()
+            .Subscribe(fun error -> 
+                simulationEngine.PostMessage(SetPolarAlignmentError error))
+            |> cleanup.Add
+        periodicErrorAmplitude
+            .AsObservable()
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Subscribe(fun amplitude -> 
+                simulationEngine.PostMessage(SetPeriodicError(amplitude, periodicErrorPeriod.Value)))
+            |> cleanup.Add
+        periodicErrorPeriod
+            .AsObservable()
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Subscribe(fun period -> 
+                simulationEngine.PostMessage(SetPeriodicError(periodicErrorAmplitude.Value, period)))
+            |> cleanup.Add
+
         simulationEngine.MountStateChanged
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(fun state ->
@@ -224,9 +241,15 @@ type MountViewModel(simulationEngine: SimulationEngine) =
                 periodicErrorPeriod.Value <- state.PeriodicErrorPeriod
                 slewRate.Value <- state.SlewRate
                 focalLength.Value <- state.FocalLength)
-    
-    // Subscribe to detailed mount state changes for additional info
-    let detailedMountSubscription =
+            |> cleanup.Add
+        Observable.Interval(TimeSpan.FromSeconds(0.1))
+            .WithLatestFrom(isCableSnagActive.AsObservable())
+            .Where(fun struct (_, isActive) -> isActive)
+            .Subscribe(fun _ ->
+                let raAmount = 0.0002 // Smaller continuous effect
+                let decAmount = 0.0001
+                simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount))
+            ) |> cleanup.Add
         (simulationEngine.DetailedMountStateChanged : IObservable<DetailedMountState>)
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(fun state ->
@@ -238,6 +261,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
                         targetRa.Value <- ra
                         targetDec.Value <- dec
                         true)
+            |> cleanup.Add
     
     // Initialize with current state - after subscriptions
     do
@@ -258,6 +282,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
         // Initial target coordinates
         targetRa.Value <- currentMountState.RA
         targetDec.Value <- currentMountState.Dec
+
     
     // Properties
     member _.RA = ra
@@ -273,9 +298,9 @@ type MountViewModel(simulationEngine: SimulationEngine) =
     member _.TargetDec = targetDec
     member _.SlewSpeedOptions = slewSpeedOptions
     member _.SelectedSlewSpeed = selectedSlewSpeed
-    //member _.CoordinatesText = coordinatesText
-    
-    // Commands - updated to use createSimple for unit commands
+    member _.IsCableSnagActive = isCableSnagActive
+    member _.CableSnagButtonText = cableSnagButtonText
+
     member _.NudgeNorthCommand = ReactiveCommand.createSimple (fun () -> 
         Logger.logf "Executing North nudge with speed: {0}" [|selectedSlewSpeed.Value|]
         simulationEngine.PostMessage(Nudge(0.0, selectedSlewSpeed.Value, 0.1)))
@@ -335,17 +360,23 @@ type MountViewModel(simulationEngine: SimulationEngine) =
         selectedSlewSpeed.Value <- speed
         let newMountState = { simulationEngine.CurrentState.Mount with SlewRate = speed }
         simulationEngine.PostMessage(UpdateMount newMountState))
-    
-    member _.SimulateCableSnagCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Simulating cable snag"
-        let raAmount = 0.002
-        let decAmount = 0.001
-        simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount)))
-    
+    member _.ToggleCableSnagCommand = ReactiveCommand.createSimple (fun () -> 
+        isCableSnagActive.Value <- not isCableSnagActive.Value
+        
+        if isCableSnagActive.Value then
+            cableSnagButtonText.Value <- "Remove Cable Snag"
+            Logger.log "Activating cable snag effect"
+            let raAmount = 0.002
+            let decAmount = 0.001
+            simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount))
+        else
+            cableSnagButtonText.Value <- "Enable Cable Snag"
+            Logger.log "Removing cable snag effect"
+    )
+
     override this.Dispose(disposing) =
         if disposing then
-            mountSubscription.Dispose()
-            detailedMountSubscription.Dispose()
+            cleanup.Dispose()
 
 
 // Updated CameraViewModel with continuous capture using the SimulationEngine
@@ -368,9 +399,9 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
     
     // Available binning options
     let availableBinning = [| 1; 2; 4 |]
+    let cleanup = new CompositeDisposable()
     
-    // Subscribe to simulation state changes first
-    let subscription = 
+    do
         simulationEngine.CameraStateChanged
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(fun state ->
@@ -383,9 +414,8 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
                 isExposing.Value <- state.IsExposing
                 readNoise.Value <- state.ReadNoise
                 darkCurrent.Value <- state.DarkCurrent)
-    
-    // Initialize after subscription setup
-    do
+            |> cleanup.Add
+
         let currentCameraState = simulationEngine.CurrentState.Camera
         width.Value <- currentCameraState.Width
         height.Value <- currentCameraState.Height
@@ -400,19 +430,44 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
         isCapturing.Value <- simulationEngine.IsContinuousCaptureEnabled
         captureButtonText.Value <- if isCapturing.Value then "Stop Capturing" else "Start Capturing"
         
-        // Subscribe to exposure time changes from the UI
         exposureTime.AsObservable()
             .Skip(1) // Skip initial value
-            .Throttle(TimeSpan.FromMilliseconds(100.0)) // Debounce rapid changes
+            .DistinctUntilChanged()
             .Subscribe(fun time ->
                 // Update the camera state with the new exposure time
                 let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
                 simulationEngine.PostMessage(UpdateCamera newCamera)
-                
-                // Log the change
-                Logger.logf "Exposure time updated to: %.1f seconds" [|time|]
-            ) |> ignore
-    
+                Logger.logf "Exposure time updated to: %.1f seconds" [|time|]) 
+            |> cleanup.Add
+        binning
+            .AsObservable()
+            .Skip(1)
+            .DistinctUntilChanged()
+            .Subscribe(fun bin ->
+                if availableBinning |> Array.contains bin then
+                    Logger.logf "Binning changed to: %d" [|bin|]
+                    let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
+                    simulationEngine.PostMessage(UpdateCamera newCamera)
+                else
+                    Logger.logf "Invalid binning value: %d" [|bin|]) 
+            |> cleanup.Add
+        readNoise.AsObservable()
+            .Skip(1) // Skip initial value
+            .DistinctUntilChanged()
+            .Subscribe(fun x ->
+                let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = x }
+                simulationEngine.PostMessage(UpdateCamera newCamera)
+                Logger.logf "Read noise updated to: %.1f" [|x|]) 
+            |> cleanup.Add
+        darkCurrent.AsObservable()
+            .Skip(1) // Skip initial value
+            .DistinctUntilChanged()
+            .Subscribe(fun x ->
+                let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = x }
+                simulationEngine.PostMessage(UpdateCamera newCamera)
+                Logger.logf "Dark current updated to: %.1f" [|x|]) 
+            |> cleanup.Add
+
     // Properties
     member _.Width = width
     member _.Height = height
@@ -472,7 +527,7 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
     // Clean up subscriptions
     override this.Dispose(disposing) =
         if disposing then
-            subscription.Dispose()
+            cleanup.Dispose()
             
             // Ensure capturing is stopped
             if isCapturing.Value then
@@ -488,15 +543,37 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
     let seeingCondition = ReactiveProperty<float>()
     let cloudCoverage = ReactiveProperty<float>()
     let transparency = ReactiveProperty<float>()
-    
-    // Subscribe to simulation state changes first
-    let subscription = 
+    let cleanup = new CompositeDisposable()
+    do
+        seeingCondition
+            .AsObservable()
+            .Skip(1)  // Skip the initial value to avoid immediately overwriting
+            .DistinctUntilChanged()
+            .Subscribe(fun x -> 
+                simulationEngine.PostMessage(SetSeeingCondition x))
+            |> cleanup.Add
+        cloudCoverage
+            .AsObservable()
+            .Skip(1)  // Skip the initial value to avoid immediately overwriting
+            .DistinctUntilChanged()
+            .Subscribe(fun x -> 
+                simulationEngine.PostMessage(SetCloudCoverage x))
+            |> cleanup.Add
+        transparency
+            .AsObservable()
+            .Skip(1)  // Skip the initial value to avoid immediately overwriting
+            .DistinctUntilChanged()
+            .Subscribe(fun x -> 
+                simulationEngine.PostMessage(SetTransparency x))
+            |> cleanup.Add
+
         simulationEngine.AtmosphereStateChanged
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(fun state ->
                 seeingCondition.Value <- state.SeeingCondition
                 cloudCoverage.Value <- state.CloudCoverage
                 transparency.Value <- state.Transparency)
+        |> cleanup.Add
     
     // Initialize with current state after subscription setup
     do
@@ -547,7 +624,7 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
     
     override _.Dispose(disposing) =
         if disposing then
-            subscription.Dispose()
+            cleanup.Dispose()
 
 // Updated RotatorViewModel with unit command support
 type RotatorViewModel(simulationEngine: SimulationEngine) =
@@ -556,9 +633,9 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
     // Observable state
     let position = ReactiveProperty<float>()
     let isMoving = ReactiveProperty<bool>()
-    
-    // Subscribe to simulation state changes first
-    let subscription = 
+    let cleanup = new CompositeDisposable()
+
+    do
         simulationEngine.RotatorStateChanged
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(fun state ->
@@ -566,9 +643,14 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
                     [|state.Position; state.IsMoving|]
                 position.Value <- state.Position
                 isMoving.Value <- state.IsMoving)
-    
-    // Initialize after subscription setup
-    do
+            |> cleanup.Add
+        position.AsObservable()
+            .Skip(1)  // Skip the initial value to avoid immediately overwriting
+            .DistinctUntilChanged()
+            .Subscribe(fun x -> 
+                simulationEngine.PostMessage(SetRotatorPosition x))
+            |> cleanup.Add
+
         let currentRotatorState = simulationEngine.CurrentState.Rotator
         position.Value <- currentRotatorState.Position
         isMoving.Value <- currentRotatorState.IsMoving
@@ -601,7 +683,7 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
     
     override _.Dispose(disposing) =
         if disposing then
-            subscription.Dispose()
+            cleanup.Dispose()
 
 type StarFieldViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()

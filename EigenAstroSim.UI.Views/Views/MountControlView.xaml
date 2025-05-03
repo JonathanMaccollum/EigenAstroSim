@@ -179,11 +179,11 @@
                 </StackPanel>
                 
                 <!-- Cable Snag Simulation -->
-                <Button Content="Simulate Cable Snag" 
-                        Command="{Binding SimulateCableSnagCommand}"
-                        Margin="0,10,0,0"
-                        HorizontalAlignment="Center"
-                        Style="{StaticResource ButtonStyle}" />
+                <Button Content="{Binding CableSnagButtonText.Value}" 
+                    Command="{Binding ToggleCableSnagCommand}"
+                    Margin="0,10,0,0"
+                    HorizontalAlignment="Center"
+                    Style="{StaticResource ButtonStyle}" />
             </StackPanel>
         </Border>
     </StackPanel>

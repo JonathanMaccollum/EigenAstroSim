@@ -34,7 +34,7 @@
                     </Grid.ColumnDefinitions>
                     <Slider Grid.Column="0" Minimum="0" Maximum="360" 
                             Value="{Binding Position.Value, Mode=TwoWay}"
-                            TickFrequency="45" TickPlacement="BottomRight"
+                            TickFrequency="15" TickPlacement="BottomRight"
                             IsSnapToTickEnabled="True" />
                     <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
                         <Run Text="{Binding Position.Value, StringFormat=F1, Mode=OneWay}" />
