@@ -30,18 +30,49 @@ The simulator creates a virtual night sky environment with realistic star fields
 
 The project is organized into the following main components:
 
-- **EigenAstroSim.Domain**: Core domain model and business logic
-  - **Types**: Core domain types
-  - **StarField**: Star field generation and management
-  - **StarFieldGenerator**: Algorithms for creating realistic star distributions
-  - **ImageGeneration**: Synthetic image creation with realistic noise and effects
-  - **Mount**: Mount simulation with tracking and guiding (in progress)
-  
-- **EigenAstroSim.Tests**: Comprehensive test suite
-  - **StarFieldTests**: Unit tests for star field functionality
-  - **PropertyBasedTests**: Property-based tests for star field
-  - **ImageGenerationTests**: Unit tests for image generation
-  - **ImageGenerationPropertyTests**: Property-based tests for image generation
+### **Documentation**
+- **F# Best Practices and Common Pitfalls with .NET 8.md**: Comprehensive F# coding guidelines
+- **EigenAstroSim.00 - Fsharp Best Practices.md**: Project-specific F# best practices
+- **EigenAstroSim.00 - Rx.NET Best Practices.md**: Reactive programming guidelines
+- **EigenAstroSim.01 - Architecture Prompt.md**: System architecture documentation
+- **EigenAstroSim.01b - Architecture Response.md**: Architecture implementation details
+- **EigenAstroSim.02 - Test cases.md**: Testing strategy documentation
+- **EigenAstroSim.03 - Point Source Propagation Through Astrophotography Imaging.md**: Technical documentation
+- **EigenAstroSim.03a - Brainstorming.md**: Design discussions
+- **EigenAstroSim.03b - Sample Sensor Technology.md**: Sensor technology specifications
+- **EigenAstroSim.03c - Virtual Astrophotography Sensor - Complete Specification.md**: Complete sensor specification
+
+### **EigenAstroSim.Domain** (Core Domain Model and Business Logic)
+- **Types.fs**: Core domain types and definitions
+- **ImageGeneration.fs**: Synthetic image creation with realistic noise and effects
+- **MountSimulation.fs**: Mount simulation logic and tracking
+
+### **EigenAstroSim.Tests** (Comprehensive Test Suite)
+- **StarFieldTests.fs**: Unit tests for star field functionality
+- **StarFieldPropertyTests.fs**: Property-based tests for star field
+- **ImageGenerationTests.fs**: Unit tests for image generation
+- **ImageGenerationPropertyTests.fs**: Property-based tests for image generation
+- **MountSimulationTests.fs**: Unit tests for mount simulation
+- **MountSimulationPropertyTests.fs**: Property-based tests for mount simulation
+
+### **EigenAstroSim.UI** (User Interface and Services)
+- **Services**
+  - **FileLogger.fs**: File-based logging service
+  - **SimulationTimerService.fs**: Timer service for simulation updates
+- **Converters.fs**: WPF value converters
+- **SimulationEngine.fs**: Main simulation engine
+- **ViewModels.fs**: MVVM ViewModels for UI binding
+
+### **EigenAstroSim.UI.Views** (WPF Views)
+- **AtmosphereControlView.xaml**: Controls for atmospheric conditions
+- **CameraView.xaml**: Camera simulation interface
+- **MountControlView.xaml**: Mount control interface
+- **RotatorView.xaml**: Rotator control interface
+- **StarFieldView.xaml**: Star field visualization
+- **Views.cs**: View code-behind
+- **App.xaml**: WPF application definition
+- **AssemblyInfo.cs**: Assembly information
+- **MainWindow.xaml**: Main application window
 
 ## Current Status
 
@@ -52,8 +83,9 @@ The project is under active development. Current implementation includes:
 - ✅ Comprehensive test suite for star field functionality
 - ✅ Image generation with PSF rendering, atmospheric effects, and sensor simulation
 - ✅ Mount simulation
+- ✅ WPF UI with MVVM pattern
 - 🔄 Camera driver simulation
-- 🔄 UI implementation
+- 🔄 UI functionality completion
 - ⬜ ASCOM drivers
 
 ## Development Approach
@@ -85,7 +117,8 @@ dotnet build
 ```bash
 dotnet test
 ```
-### Running Tests
+
+### Running the Application
 
 ```bash
 dotnet run --project .\EigenAstroSim.UI.Views\EigenAstroSim.UI.Views.csproj
@@ -111,9 +144,9 @@ The image generator produces realistic synthetic images with:
 - Proper binning
 - Exposure time scaling
 
-### Mount Simulation (In Progress)
+### Mount Simulation
 
-The mount simulation will model:
+The mount simulation models:
 - Equatorial mount mechanics
 - Tracking and slewing
 - Periodic error
