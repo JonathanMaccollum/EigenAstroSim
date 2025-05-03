@@ -11,12 +11,12 @@ open System.IO
 // Converts a boolean to its inverse
 type InverseBoolConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, _, _) =
             match value with
             | :? bool as b -> not b :> obj
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(value, _, _, _) =
             match value with
             | :? bool as b -> not b :> obj
             | _ -> DependencyProperty.UnsetValue
@@ -24,12 +24,12 @@ type InverseBoolConverter() =
 // Converts a boolean to visibility (true = Visible, false = Collapsed)
 type BoolToVisibilityConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, _, _) =
             match value with
             | :? bool as b when b -> Visibility.Visible :> obj
             | _ -> Visibility.Collapsed :> obj
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(value, _, _, _) =
             match value with
             | :? Visibility as v -> (v = Visibility.Visible) :> obj
             | _ -> DependencyProperty.UnsetValue
@@ -37,7 +37,7 @@ type BoolToVisibilityConverter() =
 // Converts byte array to an image source
 type ByteArrayToImageConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, parameter, _) =
             match value with
             | :? (byte[]) as bytes when bytes.Length > 0 ->
                 try
@@ -128,7 +128,7 @@ type ByteArrayToImageConverter() =
                     DependencyProperty.UnsetValue
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(_, _, _, _) =
             DependencyProperty.UnsetValue
 
 
@@ -137,7 +137,7 @@ type ByteArrayToImageConverter() =
 /// </summary>
 type FloatArrayToImageConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, parameter, _) =
             match value with
             | :? (float[]) as floats when floats.Length > 0 ->
                 try
@@ -211,13 +211,13 @@ type FloatArrayToImageConverter() =
                     DependencyProperty.UnsetValue
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(_, _, _, _) =
             DependencyProperty.UnsetValue
 
 // Converts a right ascension value in degrees to HH:MM:SS.SS format
 type RAToHMSConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, _, _) =
             match value with
             | :? float as ra ->
                 // Convert degrees to hours (15 degrees = 1 hour)
@@ -233,7 +233,7 @@ type RAToHMSConverter() =
                 sprintf "%02d:%02d:%05.2f" (int hours) (int minutes) seconds :> obj
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(value, _, _, _) =
             match value with
             | :? string as hms ->
                 try
@@ -256,7 +256,7 @@ type RAToHMSConverter() =
 // Converts a declination value in degrees to DD:MM:SS.SS format
 type DecToDMSConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, _, _) =
             match value with
             | :? float as dec ->
                 // Determine sign
@@ -273,7 +273,7 @@ type DecToDMSConverter() =
                 sprintf "%s%02d:%02d:%05.2f" sign (int degrees) (int minutes) seconds :> obj
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(value, _, _, _) =
             match value with
             | :? string as dms ->
                 try
@@ -299,12 +299,12 @@ type DecToDMSConverter() =
 // Converts a numeric value to a percentage string
 type PercentageConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, _, _) =
             match value with
             | :? float as v -> (v * 100.0).ToString("0") + "%" :> obj
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(value, _, _, _) =
             match value with
             | :? string as s ->
                 try
@@ -320,7 +320,7 @@ type PercentageConverter() =
 /// </summary>
 type FloatArrayToImageWithStretchConverter() =
     interface IValueConverter with
-        member this.Convert(value, targetType, parameter, culture) =
+        member this.Convert(value, _, parameter, _) =
             match value with
             | :? (float[]) as floats when floats.Length > 0 ->
                 try
@@ -393,12 +393,12 @@ type FloatArrayToImageWithStretchConverter() =
                     DependencyProperty.UnsetValue
             | _ -> DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetType, parameter, culture) =
+        member this.ConvertBack(_, _, _, _) =
             DependencyProperty.UnsetValue
 
 type FloatArrayWithStretchMultiConverter() =
     interface IMultiValueConverter with
-        member this.Convert(values, targetType, parameter, culture) =
+        member this.Convert(values, _, _, _) =
             if values.Length >= 6 && 
                values.[0] :? float[] && 
                values.[1] :? int && 
@@ -478,5 +478,5 @@ type FloatArrayWithStretchMultiConverter() =
             else
                 DependencyProperty.UnsetValue
         
-        member this.ConvertBack(value, targetTypes, parameter, culture) =
+        member this.ConvertBack(_, targetTypes, _, _) =
             Array.init targetTypes.Length (fun _ -> DependencyProperty.UnsetValue)
