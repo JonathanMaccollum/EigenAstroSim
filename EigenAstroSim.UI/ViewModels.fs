@@ -5,6 +5,7 @@ open System.Reactive.Linq
 open System.Collections.ObjectModel
 open System.Collections.Generic
 open System.Windows.Input
+open System.Windows.Threading
 open System.ComponentModel
 open System.Threading
 open System.Reactive.Subjects
@@ -36,8 +37,12 @@ type ViewModelBase() =
     default _.Dispose(_) = ()
 
 // Reactive property implementation
-type ReactiveProperty<'T>() =
-    let mutable value = Unchecked.defaultof<'T>
+type ReactiveProperty<'T>(?initialValue: 'T) =
+    let mutable value = 
+        match initialValue with
+        | Some v -> v
+        | None -> Unchecked.defaultof<'T>
+        
     let changed = new System.Reactive.Subjects.Subject<'T>()
     let propertyChanged = Event<PropertyChangedEventHandler, PropertyChangedEventArgs>()
     
@@ -202,7 +207,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
     let coordinatesText = ReactiveProperty<string>()
     
     // Slew speed options (degrees per second)
-    let slewSpeedOptions = [| 0.1; 0.5; 1.0; 3.0; 5.0 |]
+    let slewSpeedOptions = [| 0.1; 0.5; 1.0; 2.0; 4.0; 8.0; 16.0; 32.0 |]
     let selectedSlewSpeed = ReactiveProperty<float>()
     
     // Subscribe first, then initialize - prevent race conditions
@@ -304,7 +309,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
     member _.SlewToCommand = ReactiveCommand.create (fun (raDecTuple: obj) -> 
         match raDecTuple with
         | :? Tuple<float, float> as tuple -> 
-            let ra, dec = tuple.Item1, tuple.Item2
+            let (ra, dec) = tuple
             Logger.logf "Executing SlewTo: RA={0}, Dec={1}" [|ra; dec|]
             simulationEngine.PostMessage(SlewTo(ra, dec))
         | _ -> 
@@ -342,7 +347,8 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             mountSubscription.Dispose()
             detailedMountSubscription.Dispose()
 
-// Updated CameraViewModel with updated command types
+
+// Updated CameraViewModel with continuous capture using the SimulationEngine
 type CameraViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
     
@@ -356,6 +362,10 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
     let readNoise = ReactiveProperty<float>()
     let darkCurrent = ReactiveProperty<float>()
     
+    // New properties for continuous capture mode
+    let isCapturing = ReactiveProperty<bool>(false)
+    let captureButtonText = ReactiveProperty<string>("Start Capturing")
+    
     // Available binning options
     let availableBinning = [| 1; 2; 4 |]
     
@@ -367,7 +377,8 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
                 width.Value <- state.Width
                 height.Value <- state.Height
                 pixelSize.Value <- state.PixelSize
-                exposureTime.Value <- state.ExposureTime
+                if not isCapturing.Value || (Math.Abs(exposureTime.Value - state.ExposureTime) < 0.001) then
+                    exposureTime.Value <- state.ExposureTime
                 binning.Value <- state.Binning
                 isExposing.Value <- state.IsExposing
                 readNoise.Value <- state.ReadNoise
@@ -384,6 +395,23 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
         isExposing.Value <- currentCameraState.IsExposing
         readNoise.Value <- currentCameraState.ReadNoise
         darkCurrent.Value <- currentCameraState.DarkCurrent
+        
+        // Initialize capture button state
+        isCapturing.Value <- simulationEngine.IsContinuousCaptureEnabled
+        captureButtonText.Value <- if isCapturing.Value then "Stop Capturing" else "Start Capturing"
+        
+        // Subscribe to exposure time changes from the UI
+        exposureTime.AsObservable()
+            .Skip(1) // Skip initial value
+            .Throttle(TimeSpan.FromMilliseconds(100.0)) // Debounce rapid changes
+            .Subscribe(fun time ->
+                // Update the camera state with the new exposure time
+                let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
+                simulationEngine.PostMessage(UpdateCamera newCamera)
+                
+                // Log the change
+                Logger.logf "Exposure time updated to: %.1f seconds" [|time|]
+            ) |> ignore
     
     // Properties
     member _.Width = width
@@ -395,44 +423,62 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
     member _.ReadNoise = readNoise
     member _.DarkCurrent = darkCurrent
     member _.AvailableBinning = availableBinning
+    member _.IsCapturing = isCapturing
+    member _.CaptureButtonText = captureButtonText
     
-    // Commands
-    member _.StartExposureCommand = 
-        let canExecute = isExposing.AsObservable() |> Observable.map not
-        ReactiveCommand.createWithCanExecute canExecute (fun () -> 
-            Logger.logf "Starting exposure with time: {0} seconds" [|exposureTime.Value|]
-            simulationEngine.PostMessage(StartExposure exposureTime.Value))
+    member _.ToggleCaptureCommand = 
+        ReactiveCommand.create (fun () -> 
+            isCapturing.Value <- not isCapturing.Value
+            
+            if isCapturing.Value then
+                captureButtonText.Value <- "Stop Capturing"
+                Logger.log "Starting continuous capture mode"
+                simulationEngine.PostMessage(SetContinuousCapture true)
+            else
+                captureButtonText.Value <- "Start Capturing"
+                Logger.log "Stopping continuous capture mode"
+                simulationEngine.PostMessage(SetContinuousCapture false)
+                
+                // Stop current exposure if one is in progress
+                if isExposing.Value then
+                    simulationEngine.PostMessage(StopExposure)
+        )
     
-    member _.StopExposureCommand = 
-        let canExecute = isExposing.AsObservable()
-        ReactiveCommand.createWithCanExecute canExecute (fun () -> 
-            Logger.log "Stopping exposure"
-            simulationEngine.PostMessage(StopExposure))
-    
-    member _.SetExposureTimeCommand = ReactiveCommand.create (fun (time: float) -> 
-        Logger.logf "Setting exposure time to: {0} seconds" [|time|]
-        let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
-        simulationEngine.PostMessage(UpdateCamera newCamera))
-    
-    member _.SetBinningCommand = ReactiveCommand.create (fun (bin: int) -> 
-        Logger.logf "Setting binning to: {0}" [|bin|]
-        if availableBinning |> Array.contains bin then
-            let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
+    member _.SetExposureTimeCommand = 
+        ReactiveCommand.create (fun (time: float) -> 
+            Logger.logf "Setting exposure time to: {0} seconds" [|time|]
+            let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
             simulationEngine.PostMessage(UpdateCamera newCamera))
     
-    member _.SetReadNoiseCommand = ReactiveCommand.create (fun (noise: float) -> 
-        Logger.logf "Setting read noise to: {0}" [|noise|]
-        let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = noise }
-        simulationEngine.PostMessage(UpdateCamera newCamera))
+    member _.SetBinningCommand = 
+        ReactiveCommand.create (fun (bin: int) -> 
+            Logger.logf "Setting binning to: {0}" [|bin|]
+            if availableBinning |> Array.contains bin then
+                let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
+                simulationEngine.PostMessage(UpdateCamera newCamera))
     
-    member _.SetDarkCurrentCommand = ReactiveCommand.create (fun (dark: float) -> 
-        Logger.logf "Setting dark current to: {0}" [|dark|]
-        let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = dark }
-        simulationEngine.PostMessage(UpdateCamera newCamera))
+    member _.SetReadNoiseCommand = 
+        ReactiveCommand.create (fun (noise: float) -> 
+            Logger.logf "Setting read noise to: {0}" [|noise|]
+            let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = noise }
+            simulationEngine.PostMessage(UpdateCamera newCamera))
     
-    override _.Dispose(disposing) =
+    member _.SetDarkCurrentCommand = 
+        ReactiveCommand.create (fun (dark: float) -> 
+            Logger.logf "Setting dark current to: {0}" [|dark|]
+            let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = dark }
+            simulationEngine.PostMessage(UpdateCamera newCamera))
+    
+    // Clean up subscriptions
+    override this.Dispose(disposing) =
         if disposing then
             subscription.Dispose()
+            
+            // Ensure capturing is stopped
+            if isCapturing.Value then
+                simulationEngine.PostMessage(SetContinuousCapture false)
+                if isExposing.Value then
+                    simulationEngine.PostMessage(StopExposure)
 
 // Updated AtmosphereViewModel with unit command support
 type AtmosphereViewModel(simulationEngine: SimulationEngine) =

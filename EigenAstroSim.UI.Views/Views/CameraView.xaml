@@ -27,20 +27,10 @@
                 </Grid>
                 
                 <Grid Margin="0,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    
-                    <Button Grid.Column="0" Content="Start Exposure" 
-                            Command="{Binding StartExposureCommand}"
-                            Margin="0,0,5,0"
-                            IsEnabled="{Binding IsExposing.Value, Converter={StaticResource InverseBoolConverter}, Mode=OneWay}" />
-                    
-                    <Button Grid.Column="1" Content="Stop Exposure" 
-                            Command="{Binding StopExposureCommand}"
-                            Margin="5,0,0,0"
-                            IsEnabled="{Binding IsExposing.Value, Mode=OneWay}" />
+                    <!-- Single toggle button replacing the previous two buttons -->
+                    <Button Content="{Binding CaptureButtonText.Value}" 
+                            Command="{Binding ToggleCaptureCommand}"
+                            Margin="0,0,0,0" />
                 </Grid>
             </StackPanel>
             

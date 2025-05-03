@@ -17,9 +17,9 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Slider Grid.Column="0" Minimum="0.5" Maximum="5" 
+                    <Slider Grid.Column="0" Minimum="0.1" Maximum="5" 
                             Value="{Binding SeeingCondition.Value, Mode=TwoWay}"
-                            TickFrequency="0.5" TickPlacement="BottomRight" />
+                            TickFrequency="0.1" TickPlacement="BottomRight" />
                     <TextBlock Grid.Column="1" MinWidth="40" TextAlignment="Right">
                         <Run Text="{Binding SeeingCondition.Value, StringFormat=F1, Mode=OneWay}" />
                         <Run Text="″" />

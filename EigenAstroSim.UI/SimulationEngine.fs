@@ -33,6 +33,7 @@ type Msg =
     | GenerateSatelliteTrail
     | AdvanceTime of seconds:float
     | SimulateCableSnag of raAmount:float * decAmount:float
+    | SetContinuousCapture of isEnabled:bool  // New message type for continuous capture
 
 // Core simulation engine
 type SimulationEngine() =
@@ -74,6 +75,9 @@ type SimulationEngine() =
         HasSatelliteTrail = false
     }
     
+    // Flag for continuous capture mode
+    let mutable continuousCaptureEnabled = false
+    
     // Detailed mount state
     let mutable detailedMountState = createDefaultDetailedMountState state.Mount
     
@@ -92,9 +96,17 @@ type SimulationEngine() =
     // Timer for auto-exposures
     let mutable exposureTimer = Option<Timers.Timer>.None
     
-        // Process messages and update state
+    // Process messages and update state
     let processMessage (mb: MailboxProcessor<Msg>) msg =
         match msg with
+        | SetContinuousCapture isEnabled ->
+            Logger.logf "Setting continuous capture mode: %b" [|isEnabled|]
+            continuousCaptureEnabled <- isEnabled
+            
+            // If enabling continuous capture and no exposure is in progress, start one
+            if isEnabled && not state.Camera.IsExposing then
+                mb.Post(StartExposure state.Camera.ExposureTime)
+                
         | UpdateMount newMountState ->
             state <- { state with Mount = newMountState }
             detailedMountState <- { detailedMountState with BaseState = newMountState }
@@ -118,33 +130,32 @@ type SimulationEngine() =
         | UpdateAtmosphere newAtmosphereState ->
             state <- { state with Atmosphere = newAtmosphereState }
             atmosphereStateChanged.OnNext(newAtmosphereState)
-        
+
         | StartExposure duration ->
-            // Update camera state to indicate exposure in progress
             let newCamera = { state.Camera with IsExposing = true; ExposureTime = duration }
             state <- { state with Camera = newCamera }
             cameraStateChanged.OnNext(newCamera)
-            
-            // Cancel any existing timer
             match exposureTimer with
             | Some timer -> timer.Dispose()
             | None -> ()
             
-            // Create a new timer for exposure completion
             let timer = new System.Timers.Timer(duration * 1000.0)
             timer.AutoReset <- false
             timer.Elapsed.Add(fun _ -> 
-                // Generate the image
                 let image = generateImage state
                 imageGenerated.OnNext(image)
                 
                 // Update camera state to indicate exposure completed
+                // IMPORTANT: Preserve the exposure time rather than resetting it
                 let updatedCamera = { state.Camera with IsExposing = false }
                 mb.Post(UpdateCamera updatedCamera)
                 
-                // Dispose the timer
                 timer.Dispose()
                 exposureTimer <- None
+                
+                if continuousCaptureEnabled then
+                    Logger.log "Continuous capture: starting next exposure"
+                    mb.Post(StartExposure state.Camera.ExposureTime)
             )
             
             // Start the timer
@@ -287,14 +298,6 @@ type SimulationEngine() =
             
             mountStateChanged.OnNext(detailedMountState.BaseState)
             detailedMountStateChanged.OnNext(detailedMountState)
-            
-            // If we're exposing, periodically update the image for live view
-            if state.Camera.IsExposing then
-                // For live view, generate an image with a scaled exposure time
-                let liveExposureTime = min state.Camera.ExposureTime 0.1
-                let liveViewState = { state with Camera = { state.Camera with ExposureTime = liveExposureTime } }
-                let image = generateImage liveViewState
-                imageGenerated.OnNext(image)
         
         | SimulateCableSnag(raAmount, decAmount) ->
             let newDetailedMountState = simulateCableSnag detailedMountState raAmount decAmount
@@ -341,3 +344,4 @@ type SimulationEngine() =
     member _.StarFieldChanged = starFieldChanged.AsObservable()
     member _.CurrentState = state
     member _.CurrentDetailedMountState = detailedMountState
+    member _.IsContinuousCaptureEnabled = continuousCaptureEnabled
