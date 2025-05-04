@@ -1,10 +1,10 @@
-namespace EigenAstroSim.UI.Services
+namespace EigenAstroSim.UI
 
 open System
 open System.Windows.Threading
 open EigenAstroSim.UI
 
-type SimulationTimerService(simulationEngine: SimulationEngine) =
+type SimulationTimer(simulationEngine: SimulationEngine) =
     let timer = new DispatcherTimer()
     let defaultInterval = 100
     let mutable isRunning = false
@@ -16,12 +16,12 @@ type SimulationTimerService(simulationEngine: SimulationEngine) =
         )
     member this.Start() =
         if not isRunning then
-            printfn "Starting SimulationTimerService"
+            printfn "Starting SimulationTimer"
             timer.Start()
             isRunning <- true
     member this.Stop() =
         if isRunning then
-            printfn "Stopping SimulationTimerService"
+            printfn "Stopping SimulationTimer"
             timer.Stop()
             isRunning <- false
     member this.SetInterval(milliseconds: int) =

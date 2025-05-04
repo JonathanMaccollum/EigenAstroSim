@@ -10,7 +10,6 @@ open EigenAstroSim.Domain.StarField
 open EigenAstroSim.Domain.StarFieldGenerator
 open EigenAstroSim.Domain.MountSimulation
 open EigenAstroSim.Domain.ImageGeneration
-open EigenAstroSim.UI.Services
 
 // Message types for the simulation engine
 type Msg =
@@ -95,12 +94,13 @@ type SimulationEngine() =
     
     // Timer for auto-exposures
     let mutable exposureTimer = Option<Timers.Timer>.None
+    let logger = Logger.getLogger<SimulationEngine>()
     
     // Process messages and update state
     let processMessage (mb: MailboxProcessor<Msg>) msg =
         match msg with
         | SetContinuousCapture isEnabled ->
-            Logger.logf "Setting continuous capture mode: %b" [|isEnabled|]
+            logger.Infof "Setting continuous capture mode: %b" isEnabled
             continuousCaptureEnabled <- isEnabled
             
             // If enabling continuous capture and no exposure is in progress, start one
@@ -154,7 +154,7 @@ type SimulationEngine() =
                 exposureTimer <- None
                 
                 if continuousCaptureEnabled then
-                    Logger.log "Continuous capture: starting next exposure"
+                    logger.Info "Continuous capture: starting next exposure"
                     mb.Post(StartExposure state.Camera.ExposureTime)
             )
             
@@ -219,14 +219,14 @@ type SimulationEngine() =
             detailedMountStateChanged.OnNext(newDetailedMountState)
         
         | SetRotatorPosition angle ->
-            Logger.logf "Processing SetRotatorPosition: {0}" [|angle|]
+            logger.Infof "Processing SetRotatorPosition: %f" angle
             let newRotatorState = { state.Rotator with Position = angle; IsMoving = true }
             state <- { state with Rotator = newRotatorState }
             
             // Simulate rotator movement (immediate for now)
             let finalRotatorState = { newRotatorState with IsMoving = false }
             state <- { state with Rotator = finalRotatorState }
-            Logger.logf "Sending RotatorStateChanged notification with Position={0}" [|finalRotatorState.Position|]
+            logger.Infof "Sending RotatorStateChanged notification with Position=%f" finalRotatorState.Position
             rotatorStateChanged.OnNext(finalRotatorState)
         
         | SetSeeingCondition arcseconds ->
@@ -333,7 +333,7 @@ type SimulationEngine() =
     
     // Public interface
     member _.PostMessage(msg) = 
-        Logger.log(sprintf "SimulationEngine received message: %A" msg)  // Note the sprintf
+        logger.Infof "SimulationEngine received message: %A" msg
         mailbox.Post(msg)
     member _.MountStateChanged = mountStateChanged.AsObservable()
     member _.DetailedMountStateChanged = detailedMountStateChanged.AsObservable()

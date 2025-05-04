@@ -56,9 +56,7 @@ The project is organized into the following main components:
 - **MountSimulationPropertyTests.fs**: Property-based tests for mount simulation
 
 ### **EigenAstroSim.UI** (User Interface and Services)
-- **Services**
-  - **FileLogger.fs**: File-based logging service
-  - **SimulationTimerService.fs**: Timer service for simulation updates
+- **SimulationTimer.fs**: Timer for simulation updates
 - **Converters.fs**: WPF value converters
 - **SimulationEngine.fs**: Main simulation engine
 - **ViewModels.fs**: MVVM ViewModels for UI binding
@@ -84,6 +82,7 @@ The project is under active development. Current implementation includes:
 - ✅ Image generation with PSF rendering, atmospheric effects, and sensor simulation
 - ✅ Mount simulation
 - ✅ WPF UI with MVVM pattern
+- ✅ Application Logging with Serilog
 - 🔄 Camera driver simulation
 - 🔄 UI functionality completion
 - ⬜ ASCOM drivers
