@@ -12,7 +12,7 @@ type SimulationTimer(simulationEngine: SimulationEngine) =
         timer.Interval <- TimeSpan.FromMilliseconds(float defaultInterval)
         timer.Tick.Add(fun _ -> 
             let elapsedSeconds = float defaultInterval / 1000.0
-            simulationEngine.PostMessage(AdvanceTime elapsedSeconds)
+            simulationEngine.AdvanceTime elapsedSeconds
         )
     member this.Start() =
         if not isRunning then

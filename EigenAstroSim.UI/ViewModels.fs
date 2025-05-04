@@ -213,21 +213,21 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun error -> 
-                simulationEngine.PostMessage(SetPolarAlignmentError error))
+                simulationEngine.SetPolarAlignmentError error)
             |> cleanup.Add
         periodicErrorAmplitude
             .AsObservable()
             .Skip(1)
             .DistinctUntilChanged()
             .Subscribe(fun amplitude -> 
-                simulationEngine.PostMessage(SetPeriodicError(amplitude, periodicErrorPeriod.Value)))
+                simulationEngine.SetPeriodicError(amplitude, periodicErrorPeriod.Value))
             |> cleanup.Add
         periodicErrorPeriod
             .AsObservable()
             .Skip(1)
             .DistinctUntilChanged()
             .Subscribe(fun period -> 
-                simulationEngine.PostMessage(SetPeriodicError(periodicErrorAmplitude.Value, period)))
+                simulationEngine.SetPeriodicError(periodicErrorAmplitude.Value, period))
             |> cleanup.Add
 
         simulationEngine.MountStateChanged
@@ -249,7 +249,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             .Subscribe(fun _ ->
                 let raAmount = 0.0002 // Smaller continuous effect
                 let decAmount = 0.0001
-                simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount))
+                simulationEngine.SimulateCableSnag(raAmount, decAmount)
             ) |> cleanup.Add
         (simulationEngine.DetailedMountStateChanged : IObservable<DetailedMountState>)
             .ObserveOn(SynchronizationContext.Current)
@@ -304,32 +304,32 @@ type MountViewModel(simulationEngine: SimulationEngine) =
 
     member _.NudgeNorthCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Infof "Executing North nudge with speed: %f" selectedSlewSpeed.Value
-        simulationEngine.PostMessage(Nudge(0.0, selectedSlewSpeed.Value, 0.1)))
+        simulationEngine.Nudge(0.0, selectedSlewSpeed.Value, 0.1))
     
     member _.NudgeSouthCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Infof "Executing South nudge with speed: %f" selectedSlewSpeed.Value
-        simulationEngine.PostMessage(Nudge(0.0, -selectedSlewSpeed.Value, 0.1)))
+        simulationEngine.Nudge(0.0, -selectedSlewSpeed.Value, 0.1))
     
     member _.NudgeEastCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Infof "Executing East nudge with speed: %f" selectedSlewSpeed.Value
-        simulationEngine.PostMessage(Nudge(-selectedSlewSpeed.Value, 0.0, 0.1)))
+        simulationEngine.Nudge(-selectedSlewSpeed.Value, 0.0, 0.1))
     
     member _.NudgeWestCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Infof "Executing West nudge with speed: %f" selectedSlewSpeed.Value
-        simulationEngine.PostMessage(Nudge(selectedSlewSpeed.Value, 0.0, 0.1)))
+        simulationEngine.Nudge(selectedSlewSpeed.Value, 0.0, 0.1))
     
     member _.SetTrackingCommand = ReactiveCommand.create (fun (isOn: bool) -> 
         logger.Infof "Setting tracking to: %b" isOn
         let rate = if isOn then siderealRate else 0.0
-        simulationEngine.PostMessage(SetTrackingRate rate))
+        simulationEngine.SetTrackingRate rate)
     
     member _.SetPolarErrorCommand = ReactiveCommand.create (fun (error: float) -> 
         logger.Infof "Setting polar alignment error: %f degrees" error
-        simulationEngine.PostMessage(SetPolarAlignmentError error))
+        simulationEngine.SetPolarAlignmentError error)
     
     member _.SetPeriodicErrorCommand = ReactiveCommand.create (fun (amplitude, period) -> 
         logger.Infof "Setting periodic error: amplitude=%f, period=%f" amplitude period
-        simulationEngine.PostMessage(SetPeriodicError(amplitude, period)))
+        simulationEngine.SetPeriodicError(amplitude, period))
     
     // Specifically for tuple parameters
     member _.SlewToCommand = ReactiveCommand.create (fun (raDecTuple: obj) -> 
@@ -337,7 +337,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
         | :? Tuple<float, float> as tuple -> 
             let (ra, dec) = tuple
             logger.Infof "Executing SlewTo: RA=%f, Dec=%A" ra dec
-            simulationEngine.PostMessage(SlewTo(ra, dec))
+            simulationEngine.SlewTo(ra, dec)
         | _ -> 
             logger.Info "Invalid parameter type for SlewToCommand")
     
@@ -350,7 +350,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             if parts.Length = 2 then
                 let ra = float (parts.[0].Trim())
                 let dec = float (parts.[1].Trim())
-                simulationEngine.PostMessage(SlewTo(ra, dec))
+                simulationEngine.SlewTo(ra, dec)
             else
                 logger.Info "Invalid coordinate format: expected RA,Dec"
         with ex -> 
@@ -360,7 +360,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
         logger.Infof "Setting slew speed to: %f" speed
         selectedSlewSpeed.Value <- speed
         let newMountState = { simulationEngine.CurrentState.Mount with SlewRate = speed }
-        simulationEngine.PostMessage(UpdateMount newMountState))
+        simulationEngine.UpdateMount newMountState)
     member _.ToggleCableSnagCommand = ReactiveCommand.createSimple (fun () -> 
         isCableSnagActive.Value <- not isCableSnagActive.Value
         
@@ -369,7 +369,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             logger.Info "Activating cable snag effect"
             let raAmount = 0.002
             let decAmount = 0.001
-            simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount))
+            simulationEngine.SimulateCableSnag(raAmount, decAmount)
         else
             cableSnagButtonText.Value <- "Enable Cable Snag"
             logger.Info "Removing cable snag effect"
@@ -437,7 +437,7 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             .Subscribe(fun time ->
                 // Update the camera state with the new exposure time
                 let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
-                simulationEngine.PostMessage(UpdateCamera newCamera)
+                simulationEngine.UpdateCamera newCamera
                 logger.Infof "Exposure time updated to: %.1f seconds" time) 
             |> cleanup.Add
         binning
@@ -448,7 +448,7 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
                 if availableBinning |> Array.contains bin then
                     logger.Infof "Binning changed to: %d" bin
                     let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
-                    simulationEngine.PostMessage(UpdateCamera newCamera)
+                    simulationEngine.UpdateCamera newCamera
                 else
                     logger.Infof "Invalid binning value: %d" bin) 
             |> cleanup.Add
@@ -457,7 +457,7 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             .DistinctUntilChanged()
             .Subscribe(fun x ->
                 let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = x }
-                simulationEngine.PostMessage(UpdateCamera newCamera)
+                simulationEngine.UpdateCamera newCamera
                 logger.Infof "Read noise updated to: %.1f" x) 
             |> cleanup.Add
         darkCurrent.AsObservable()
@@ -465,7 +465,7 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             .DistinctUntilChanged()
             .Subscribe(fun x ->
                 let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = x }
-                simulationEngine.PostMessage(UpdateCamera newCamera)
+                simulationEngine.UpdateCamera newCamera
                 logger.Infof "Dark current updated to: %.1f" x) 
             |> cleanup.Add
 
@@ -489,41 +489,41 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             if isCapturing.Value then
                 captureButtonText.Value <- "Stop Capturing"
                 logger.Info "Starting continuous capture mode"
-                simulationEngine.PostMessage(SetContinuousCapture true)
+                simulationEngine.SetContinuousCapture true
             else
                 captureButtonText.Value <- "Start Capturing"
                 logger.Info "Stopping continuous capture mode"
-                simulationEngine.PostMessage(SetContinuousCapture false)
+                simulationEngine.SetContinuousCapture false
                 
                 // Stop current exposure if one is in progress
                 if isExposing.Value then
-                    simulationEngine.PostMessage(StopExposure)
+                    simulationEngine.StopExposure()
         )
     
     member _.SetExposureTimeCommand = 
         ReactiveCommand.create (fun (time: float) -> 
             logger.Infof "Setting exposure time to: %f seconds" time
             let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
-            simulationEngine.PostMessage(UpdateCamera newCamera))
+            simulationEngine.UpdateCamera newCamera)
     
     member _.SetBinningCommand = 
         ReactiveCommand.create (fun (bin: int) -> 
             logger.Infof "Setting binning to: %i" bin
             if availableBinning |> Array.contains bin then
                 let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
-                simulationEngine.PostMessage(UpdateCamera newCamera))
+                simulationEngine.UpdateCamera newCamera)
     
     member _.SetReadNoiseCommand = 
         ReactiveCommand.create (fun (noise: float) -> 
             logger.Infof "Setting read noise to: %f" noise
             let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = noise }
-            simulationEngine.PostMessage(UpdateCamera newCamera))
+            simulationEngine.UpdateCamera newCamera)
     
     member _.SetDarkCurrentCommand = 
         ReactiveCommand.create (fun (dark: float) -> 
             logger.Infof "Setting dark current to: %f" dark
             let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = dark }
-            simulationEngine.PostMessage(UpdateCamera newCamera))
+            simulationEngine.UpdateCamera newCamera)
     
     // Clean up subscriptions
     override this.Dispose(disposing) =
@@ -532,9 +532,9 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             
             // Ensure capturing is stopped
             if isCapturing.Value then
-                simulationEngine.PostMessage(SetContinuousCapture false)
+                simulationEngine.SetContinuousCapture false
                 if isExposing.Value then
-                    simulationEngine.PostMessage(StopExposure)
+                    simulationEngine.StopExposure()
 
 // Updated AtmosphereViewModel with unit command support
 type AtmosphereViewModel(simulationEngine: SimulationEngine) =
@@ -552,21 +552,21 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetSeeingCondition x))
+                simulationEngine.SetSeeingCondition x)
             |> cleanup.Add
         cloudCoverage
             .AsObservable()
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetCloudCoverage x))
+                simulationEngine.SetCloudCoverage x)
             |> cleanup.Add
         transparency
             .AsObservable()
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetTransparency x))
+                simulationEngine.SetTransparency x)
             |> cleanup.Add
 
         simulationEngine.AtmosphereStateChanged
@@ -592,37 +592,37 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
     // Commands
     member _.SetSeeingCommand = ReactiveCommand.create (fun (seeing: float) -> 
         logger.Infof "Setting seeing condition to: %f arcseconds" seeing
-        simulationEngine.PostMessage(SetSeeingCondition seeing))
+        simulationEngine.SetSeeingCondition seeing)
     
     member _.SetCloudCoverageCommand = ReactiveCommand.create (fun (clouds: float) -> 
         logger.Infof "Setting cloud coverage to: %f pct" (clouds * 100.0)
-        simulationEngine.PostMessage(SetCloudCoverage clouds))
+        simulationEngine.SetCloudCoverage clouds)
     
     member _.SetTransparencyCommand = ReactiveCommand.create (fun (trans: float) -> 
         logger.Infof "Setting transparency to: %f pct" (trans * 100.0)
-        simulationEngine.PostMessage(SetTransparency trans))
+        simulationEngine.SetTransparency trans)
     
     // Weather preset commands - updated to use createSimple for unit commands
     member _.SetClearNightCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting 'Clear Night' atmospheric preset"
-        simulationEngine.PostMessage(SetSeeingCondition 1.2)
-        simulationEngine.PostMessage(SetCloudCoverage 0.0)
-        simulationEngine.PostMessage(SetTransparency 0.95))
+        simulationEngine.SetSeeingCondition 1.2
+        simulationEngine.SetCloudCoverage 0.0
+        simulationEngine.SetTransparency 0.95)
     
     member _.SetAverageSeeingCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting 'Average Seeing' atmospheric preset"
-        simulationEngine.PostMessage(SetSeeingCondition 2.5)
-        simulationEngine.PostMessage(SetTransparency 0.8))
+        simulationEngine.SetSeeingCondition 2.5
+        simulationEngine.SetTransparency 0.8)
     
     member _.SetPartlyCloudyCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting 'Partly Cloudy' atmospheric preset"
-        simulationEngine.PostMessage(SetCloudCoverage 0.4)
-        simulationEngine.PostMessage(SetTransparency 0.7))
+        simulationEngine.SetCloudCoverage 0.4
+        simulationEngine.SetTransparency 0.7)
     
     member _.SetVeryCloudyCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting 'Very Cloudy' atmospheric preset"
-        simulationEngine.PostMessage(SetCloudCoverage 0.8)
-        simulationEngine.PostMessage(SetTransparency 0.4))
+        simulationEngine.SetCloudCoverage 0.8
+        simulationEngine.SetTransparency 0.4)
     
     override _.Dispose(disposing) =
         if disposing then
@@ -650,7 +650,7 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetRotatorPosition x))
+                simulationEngine.SetRotatorPosition x)
             |> cleanup.Add
 
         let currentRotatorState = simulationEngine.CurrentState.Rotator
@@ -664,24 +664,24 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
     // Commands
     member _.SetPositionCommand = ReactiveCommand.create (fun (angle: float) -> 
         logger.Infof "Setting rotator position to: %f degrees" angle
-        simulationEngine.PostMessage(SetRotatorPosition angle))
+        simulationEngine.SetRotatorPosition angle)
     
     // Add preset angle commands - updated to use createSimple
     member _.SetAngle0Command = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting rotator to 0 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 0.0))
+        simulationEngine.SetRotatorPosition 0.0)
     
     member _.SetAngle90Command = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting rotator to 90 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 90.0))
+        simulationEngine.SetRotatorPosition 90.0)
     
     member _.SetAngle180Command = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting rotator to 180 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 180.0))
+        simulationEngine.SetRotatorPosition 180.0)
     
     member _.SetAngle270Command = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Setting rotator to 270 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 270.0))
+        simulationEngine.SetRotatorPosition 270.0)
     
     override _.Dispose(disposing) =
         if disposing then
@@ -729,7 +729,7 @@ type StarFieldViewModel(simulationEngine: SimulationEngine) =
     // Commands
     member _.GenerateSatelliteTrailCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Generating satellite trail"
-        simulationEngine.PostMessage(GenerateSatelliteTrail))
+        simulationEngine.GenerateSatelliteTrail())
     
     override _.Dispose(disposing) =
         if disposing then
@@ -757,7 +757,7 @@ type MainViewModel(simulationEngine: SimulationEngine) =
     // Commands - updated to use createSimple
     member _.GenerateSatelliteTrailCommand = ReactiveCommand.createSimple (fun () -> 
         logger.Info "Generating satellite trail from main view model"
-        simulationEngine.PostMessage(GenerateSatelliteTrail))
+        simulationEngine.GenerateSatelliteTrail())
     
     override this.Dispose(disposing) =
         if disposing then
