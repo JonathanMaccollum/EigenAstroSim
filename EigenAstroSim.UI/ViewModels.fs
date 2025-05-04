@@ -16,7 +16,6 @@ open FSharp.Control.Reactive.Observable
 open EigenAstroSim.Domain
 open EigenAstroSim.Domain.Types
 open EigenAstroSim.Domain.MountSimulation
-open EigenAstroSim.UI.Services
 
 // Base class for view models
 type ViewModelBase() =
@@ -63,12 +62,13 @@ type ReactiveProperty<'T>(?initialValue: 'T) =
 
 // Command implementation
 type ReactiveCommand<'T>(canExecute: IObservable<bool>, execute: 'T -> unit) =
+    let logger = Logger.getLogger<ReactiveCommand<'T>>()
     let canExecuteSubject = new BehaviorSubject<bool>(true)
     let canExecuteEvent = new Event<EventHandler, EventArgs>()
     
     do
         canExecute.Subscribe(fun value -> 
-            Logger.logf "CanExecute changed to: {0}" [|value|]
+            logger.Infof "CanExecute changed to: %A" value
             canExecuteSubject.OnNext(value)
             canExecuteEvent.Trigger(null, EventArgs.Empty)
         ) |> ignore
@@ -79,42 +79,42 @@ type ReactiveCommand<'T>(canExecute: IObservable<bool>, execute: 'T -> unit) =
         
         member _.CanExecute(parameter) = 
             let result = canExecuteSubject.Value
-            Logger.logf "CanExecute check returned: {0} for parameter: {1}" 
-                [|result; if isNull parameter then "null" else parameter.ToString()|]
+            logger.Infof "CanExecute check returned: %b for parameter: %s" 
+                result (if isNull parameter then "null" else parameter.ToString())
             result
         
         member _.Execute(parameter) =
-            Logger.logf "Command execution started with parameter: {0} of type {1}" 
-                [|if isNull parameter then "null" else parameter.ToString();
-                  if isNull parameter then "null" else parameter.GetType().Name|]
+            logger.Infof "Command execution started with parameter: %s of type %s" 
+                (if isNull parameter then "null" else parameter.ToString())
+                (if isNull parameter then "null" else parameter.GetType().Name)
             
             try
                 // Check if this is a unit command - handle this first!
                 if typeof<'T> = typeof<unit> then
-                    Logger.log "Executing unit command (no parameters needed)"
+                    logger.Info "Executing unit command (no parameters needed)"
                     execute Unchecked.defaultof<'T>
                     
                 // If parameter is null but command expects a value, handle based on type
                 else if isNull parameter then
                     match typeof<'T>.Name with
                     | "String" -> 
-                        Logger.log "Converting null to empty string for string parameter"
+                        logger.Info "Converting null to empty string for string parameter"
                         execute ("" :> obj :?> 'T)
                     | "Boolean" -> 
-                        Logger.log "Converting null to false for boolean parameter"
+                        logger.Info "Converting null to false for boolean parameter"
                         execute (false :> obj :?> 'T)
                     | "Int32" -> 
-                        Logger.log "Converting null to 0 for int parameter"
+                        logger.Info "Converting null to 0 for int parameter"
                         execute (0 :> obj :?> 'T)
                     | "Double" | "Single" -> 
-                        Logger.log "Converting null to 0.0 for float parameter"
+                        logger.Info "Converting null to 0.0 for float parameter"
                         execute (0.0 :> obj :?> 'T)
                     | _ ->
-                        Logger.logf "Cannot convert null to target type {0}" [|typeof<'T>.Name|]
+                        logger.Infof "Cannot convert null to target type %A" typeof<'T>.Name
                 
                 // Parameter matches target type exactly
                 else if parameter :? 'T then
-                    Logger.log "Parameter matched target type directly"
+                    logger.Info "Parameter matched target type directly"
                     execute (parameter :?> 'T)
                 
                 // Handle string conversions for common types
@@ -123,29 +123,29 @@ type ReactiveCommand<'T>(canExecute: IObservable<bool>, execute: 'T -> unit) =
                     
                     match typeof<'T>.Name with
                     | "Double" | "Single" -> 
-                        Logger.logf "Converting string to float: {0}" [|strParam|]
+                        logger.Infof "Converting string to float: %A" strParam
                         try
                             execute (float strParam :> obj :?> 'T)
                         with ex -> 
-                            Logger.logException ex (Some "converting string to float")
+                            logger.ErrorException ex "converting string to float"
                     
                     | "Int32" -> 
-                        Logger.logf "Converting string to int: {0}" [|strParam|]
+                        logger.Infof "Converting string to int: %A" strParam
                         try
                             execute (int strParam :> obj :?> 'T)
                         with ex -> 
-                            Logger.logException ex (Some "converting string to int")
+                            logger.ErrorException ex "converting string to int"
                     
                     | "Boolean" -> 
-                        Logger.logf "Converting string to bool: {0}" [|strParam|]
+                        logger.Infof "Converting string to bool: %A" [|strParam|]
                         try
                             execute (Boolean.Parse(strParam) :> obj :?> 'T)
                         with ex -> 
-                            Logger.logException ex (Some "converting string to bool")
+                            logger.ErrorException ex "converting string to bool"
                             
                     | "Tuple`2" when typeof<'T>.GenericTypeArguments.Length = 2 ->
                         // Handle tuple parameters from comma-separated strings (for RA,Dec coordinates)
-                        Logger.logf "Attempting to convert string to tuple: {0}" [|strParam|]
+                        logger.Infof "Attempting to convert string to tuple: %A" [|strParam|]
                         try
                             let parts = strParam.Split(',')
                             if parts.Length = 2 then
@@ -159,17 +159,17 @@ type ReactiveCommand<'T>(canExecute: IObservable<bool>, execute: 'T -> unit) =
                                     let tuple = Tuple<float, float>(x, y)
                                     execute (tuple :> obj :?> 'T)
                                 else
-                                    Logger.logf "Unsupported tuple conversion: {0}, {1}" 
-                                        [|arg1Type.Name; arg2Type.Name|]
+                                    logger.Infof "Unsupported tuple conversion: %s, %s" 
+                                        (arg1Type.Name) (arg2Type.Name)
                             else
-                                Logger.log "String doesn't contain exactly 2 parts for tuple conversion"
+                                logger.Info "String doesn't contain exactly 2 parts for tuple conversion"
                         with ex ->
-                            Logger.logException ex (Some "converting string to tuple")
+                            logger.ErrorException ex "converting string to tuple"
                     
                     | _ -> 
-                        Logger.logf "Cannot convert string to target type {0}" [|typeof<'T>.Name|]
+                        logger.Infof "Cannot convert string to target type %s" typeof<'T>.Name
             with ex ->
-                Logger.logException ex (Some "executing command")
+                logger.ErrorException ex "executing command"
 
 // Command factory
 module ReactiveCommand =
@@ -184,7 +184,8 @@ module ReactiveCommand =
 // MountViewModel with updated commands
 type MountViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
-    
+    let logger = Logger.getLogger<MountViewModel>()
+
     // Observable state
     let ra = ReactiveProperty<float>()
     let dec = ReactiveProperty<float>()
@@ -212,21 +213,21 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun error -> 
-                simulationEngine.PostMessage(SetPolarAlignmentError error))
+                simulationEngine.SetPolarAlignmentError error)
             |> cleanup.Add
         periodicErrorAmplitude
             .AsObservable()
             .Skip(1)
             .DistinctUntilChanged()
             .Subscribe(fun amplitude -> 
-                simulationEngine.PostMessage(SetPeriodicError(amplitude, periodicErrorPeriod.Value)))
+                simulationEngine.SetPeriodicError(amplitude, periodicErrorPeriod.Value))
             |> cleanup.Add
         periodicErrorPeriod
             .AsObservable()
             .Skip(1)
             .DistinctUntilChanged()
             .Subscribe(fun period -> 
-                simulationEngine.PostMessage(SetPeriodicError(periodicErrorAmplitude.Value, period)))
+                simulationEngine.SetPeriodicError(periodicErrorAmplitude.Value, period))
             |> cleanup.Add
 
         simulationEngine.MountStateChanged
@@ -248,7 +249,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
             .Subscribe(fun _ ->
                 let raAmount = 0.0002 // Smaller continuous effect
                 let decAmount = 0.0001
-                simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount))
+                simulationEngine.SimulateCableSnag(raAmount, decAmount)
             ) |> cleanup.Add
         (simulationEngine.DetailedMountStateChanged : IObservable<DetailedMountState>)
             .ObserveOn(SynchronizationContext.Current)
@@ -302,76 +303,76 @@ type MountViewModel(simulationEngine: SimulationEngine) =
     member _.CableSnagButtonText = cableSnagButtonText
 
     member _.NudgeNorthCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.logf "Executing North nudge with speed: {0}" [|selectedSlewSpeed.Value|]
-        simulationEngine.PostMessage(Nudge(0.0, selectedSlewSpeed.Value, 0.1)))
+        logger.Infof "Executing North nudge with speed: %f" selectedSlewSpeed.Value
+        simulationEngine.Nudge(0.0, selectedSlewSpeed.Value, 0.1))
     
     member _.NudgeSouthCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.logf "Executing South nudge with speed: {0}" [|selectedSlewSpeed.Value|]
-        simulationEngine.PostMessage(Nudge(0.0, -selectedSlewSpeed.Value, 0.1)))
+        logger.Infof "Executing South nudge with speed: %f" selectedSlewSpeed.Value
+        simulationEngine.Nudge(0.0, -selectedSlewSpeed.Value, 0.1))
     
     member _.NudgeEastCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.logf "Executing East nudge with speed: {0}" [|selectedSlewSpeed.Value|]
-        simulationEngine.PostMessage(Nudge(-selectedSlewSpeed.Value, 0.0, 0.1)))
+        logger.Infof "Executing East nudge with speed: %f" selectedSlewSpeed.Value
+        simulationEngine.Nudge(-selectedSlewSpeed.Value, 0.0, 0.1))
     
     member _.NudgeWestCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.logf "Executing West nudge with speed: {0}" [|selectedSlewSpeed.Value|]
-        simulationEngine.PostMessage(Nudge(selectedSlewSpeed.Value, 0.0, 0.1)))
+        logger.Infof "Executing West nudge with speed: %f" selectedSlewSpeed.Value
+        simulationEngine.Nudge(selectedSlewSpeed.Value, 0.0, 0.1))
     
     member _.SetTrackingCommand = ReactiveCommand.create (fun (isOn: bool) -> 
-        Logger.logf "Setting tracking to: {0}" [|isOn|]
+        logger.Infof "Setting tracking to: %b" isOn
         let rate = if isOn then siderealRate else 0.0
-        simulationEngine.PostMessage(SetTrackingRate rate))
+        simulationEngine.SetTrackingRate rate)
     
     member _.SetPolarErrorCommand = ReactiveCommand.create (fun (error: float) -> 
-        Logger.logf "Setting polar alignment error: {0} degrees" [|error|]
-        simulationEngine.PostMessage(SetPolarAlignmentError error))
+        logger.Infof "Setting polar alignment error: %f degrees" error
+        simulationEngine.SetPolarAlignmentError error)
     
     member _.SetPeriodicErrorCommand = ReactiveCommand.create (fun (amplitude, period) -> 
-        Logger.logf "Setting periodic error: amplitude={0}, period={1}" [|amplitude; period|]
-        simulationEngine.PostMessage(SetPeriodicError(amplitude, period)))
+        logger.Infof "Setting periodic error: amplitude=%f, period=%f" amplitude period
+        simulationEngine.SetPeriodicError(amplitude, period))
     
     // Specifically for tuple parameters
     member _.SlewToCommand = ReactiveCommand.create (fun (raDecTuple: obj) -> 
         match raDecTuple with
         | :? Tuple<float, float> as tuple -> 
             let (ra, dec) = tuple
-            Logger.logf "Executing SlewTo: RA={0}, Dec={1}" [|ra; dec|]
-            simulationEngine.PostMessage(SlewTo(ra, dec))
+            logger.Infof "Executing SlewTo: RA=%f, Dec=%A" ra dec
+            simulationEngine.SlewTo(ra, dec)
         | _ -> 
-            Logger.log "Invalid parameter type for SlewToCommand")
+            logger.Info "Invalid parameter type for SlewToCommand")
     
     // For text input coordinates
     member _.SlewToCoordinatesCommand = ReactiveCommand.create (fun (coordText: string) -> 
-        Logger.logf "Executing SlewToCoordinates with input: {0}" [|coordText|]
+        logger.Infof "Executing SlewToCoordinates with input: %s" coordText
         try
             // Parse coordinates in format "RA,Dec" 
             let parts = coordText.Split(',')
             if parts.Length = 2 then
                 let ra = float (parts.[0].Trim())
                 let dec = float (parts.[1].Trim())
-                simulationEngine.PostMessage(SlewTo(ra, dec))
+                simulationEngine.SlewTo(ra, dec)
             else
-                Logger.log "Invalid coordinate format: expected RA,Dec"
+                logger.Info "Invalid coordinate format: expected RA,Dec"
         with ex -> 
-            Logger.logException ex (Some "parsing coordinates"))
+            logger.ErrorException ex "parsing coordinates")
     
     member _.SetSlewSpeedCommand = ReactiveCommand.create (fun (speed: float) -> 
-        Logger.logf "Setting slew speed to: {0}" [|speed|]
+        logger.Infof "Setting slew speed to: %f" speed
         selectedSlewSpeed.Value <- speed
         let newMountState = { simulationEngine.CurrentState.Mount with SlewRate = speed }
-        simulationEngine.PostMessage(UpdateMount newMountState))
+        simulationEngine.UpdateMount newMountState)
     member _.ToggleCableSnagCommand = ReactiveCommand.createSimple (fun () -> 
         isCableSnagActive.Value <- not isCableSnagActive.Value
         
         if isCableSnagActive.Value then
             cableSnagButtonText.Value <- "Remove Cable Snag"
-            Logger.log "Activating cable snag effect"
+            logger.Info "Activating cable snag effect"
             let raAmount = 0.002
             let decAmount = 0.001
-            simulationEngine.PostMessage(SimulateCableSnag(raAmount, decAmount))
+            simulationEngine.SimulateCableSnag(raAmount, decAmount)
         else
             cableSnagButtonText.Value <- "Enable Cable Snag"
-            Logger.log "Removing cable snag effect"
+            logger.Info "Removing cable snag effect"
     )
 
     override this.Dispose(disposing) =
@@ -382,7 +383,7 @@ type MountViewModel(simulationEngine: SimulationEngine) =
 // Updated CameraViewModel with continuous capture using the SimulationEngine
 type CameraViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
-    
+    let logger = Logger.getLogger<CameraViewModel>()    
     // Observable state
     let width = ReactiveProperty<int>()
     let height = ReactiveProperty<int>()
@@ -436,8 +437,8 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             .Subscribe(fun time ->
                 // Update the camera state with the new exposure time
                 let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
-                simulationEngine.PostMessage(UpdateCamera newCamera)
-                Logger.logf "Exposure time updated to: %.1f seconds" [|time|]) 
+                simulationEngine.UpdateCamera newCamera
+                logger.Infof "Exposure time updated to: %.1f seconds" time) 
             |> cleanup.Add
         binning
             .AsObservable()
@@ -445,27 +446,27 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             .DistinctUntilChanged()
             .Subscribe(fun bin ->
                 if availableBinning |> Array.contains bin then
-                    Logger.logf "Binning changed to: %d" [|bin|]
+                    logger.Infof "Binning changed to: %d" bin
                     let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
-                    simulationEngine.PostMessage(UpdateCamera newCamera)
+                    simulationEngine.UpdateCamera newCamera
                 else
-                    Logger.logf "Invalid binning value: %d" [|bin|]) 
+                    logger.Infof "Invalid binning value: %d" bin) 
             |> cleanup.Add
         readNoise.AsObservable()
             .Skip(1) // Skip initial value
             .DistinctUntilChanged()
             .Subscribe(fun x ->
                 let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = x }
-                simulationEngine.PostMessage(UpdateCamera newCamera)
-                Logger.logf "Read noise updated to: %.1f" [|x|]) 
+                simulationEngine.UpdateCamera newCamera
+                logger.Infof "Read noise updated to: %.1f" x) 
             |> cleanup.Add
         darkCurrent.AsObservable()
             .Skip(1) // Skip initial value
             .DistinctUntilChanged()
             .Subscribe(fun x ->
                 let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = x }
-                simulationEngine.PostMessage(UpdateCamera newCamera)
-                Logger.logf "Dark current updated to: %.1f" [|x|]) 
+                simulationEngine.UpdateCamera newCamera
+                logger.Infof "Dark current updated to: %.1f" x) 
             |> cleanup.Add
 
     // Properties
@@ -487,42 +488,42 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             
             if isCapturing.Value then
                 captureButtonText.Value <- "Stop Capturing"
-                Logger.log "Starting continuous capture mode"
-                simulationEngine.PostMessage(SetContinuousCapture true)
+                logger.Info "Starting continuous capture mode"
+                simulationEngine.SetContinuousCapture true
             else
                 captureButtonText.Value <- "Start Capturing"
-                Logger.log "Stopping continuous capture mode"
-                simulationEngine.PostMessage(SetContinuousCapture false)
+                logger.Info "Stopping continuous capture mode"
+                simulationEngine.SetContinuousCapture false
                 
                 // Stop current exposure if one is in progress
                 if isExposing.Value then
-                    simulationEngine.PostMessage(StopExposure)
+                    simulationEngine.StopExposure()
         )
     
     member _.SetExposureTimeCommand = 
         ReactiveCommand.create (fun (time: float) -> 
-            Logger.logf "Setting exposure time to: {0} seconds" [|time|]
+            logger.Infof "Setting exposure time to: %f seconds" time
             let newCamera = { simulationEngine.CurrentState.Camera with ExposureTime = time }
-            simulationEngine.PostMessage(UpdateCamera newCamera))
+            simulationEngine.UpdateCamera newCamera)
     
     member _.SetBinningCommand = 
         ReactiveCommand.create (fun (bin: int) -> 
-            Logger.logf "Setting binning to: {0}" [|bin|]
+            logger.Infof "Setting binning to: %i" bin
             if availableBinning |> Array.contains bin then
                 let newCamera = { simulationEngine.CurrentState.Camera with Binning = bin }
-                simulationEngine.PostMessage(UpdateCamera newCamera))
+                simulationEngine.UpdateCamera newCamera)
     
     member _.SetReadNoiseCommand = 
         ReactiveCommand.create (fun (noise: float) -> 
-            Logger.logf "Setting read noise to: {0}" [|noise|]
+            logger.Infof "Setting read noise to: %f" noise
             let newCamera = { simulationEngine.CurrentState.Camera with ReadNoise = noise }
-            simulationEngine.PostMessage(UpdateCamera newCamera))
+            simulationEngine.UpdateCamera newCamera)
     
     member _.SetDarkCurrentCommand = 
         ReactiveCommand.create (fun (dark: float) -> 
-            Logger.logf "Setting dark current to: {0}" [|dark|]
+            logger.Infof "Setting dark current to: %f" dark
             let newCamera = { simulationEngine.CurrentState.Camera with DarkCurrent = dark }
-            simulationEngine.PostMessage(UpdateCamera newCamera))
+            simulationEngine.UpdateCamera newCamera)
     
     // Clean up subscriptions
     override this.Dispose(disposing) =
@@ -531,14 +532,15 @@ type CameraViewModel(simulationEngine: SimulationEngine) =
             
             // Ensure capturing is stopped
             if isCapturing.Value then
-                simulationEngine.PostMessage(SetContinuousCapture false)
+                simulationEngine.SetContinuousCapture false
                 if isExposing.Value then
-                    simulationEngine.PostMessage(StopExposure)
+                    simulationEngine.StopExposure()
 
 // Updated AtmosphereViewModel with unit command support
 type AtmosphereViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
-    
+    let logger = Logger.getLogger<AtmosphereViewModel>()
+
     // Observable state
     let seeingCondition = ReactiveProperty<float>()
     let cloudCoverage = ReactiveProperty<float>()
@@ -550,21 +552,21 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetSeeingCondition x))
+                simulationEngine.SetSeeingCondition x)
             |> cleanup.Add
         cloudCoverage
             .AsObservable()
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetCloudCoverage x))
+                simulationEngine.SetCloudCoverage x)
             |> cleanup.Add
         transparency
             .AsObservable()
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetTransparency x))
+                simulationEngine.SetTransparency x)
             |> cleanup.Add
 
         simulationEngine.AtmosphereStateChanged
@@ -589,38 +591,38 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
     
     // Commands
     member _.SetSeeingCommand = ReactiveCommand.create (fun (seeing: float) -> 
-        Logger.logf "Setting seeing condition to: {0} arcseconds" [|seeing|]
-        simulationEngine.PostMessage(SetSeeingCondition seeing))
+        logger.Infof "Setting seeing condition to: %f arcseconds" seeing
+        simulationEngine.SetSeeingCondition seeing)
     
     member _.SetCloudCoverageCommand = ReactiveCommand.create (fun (clouds: float) -> 
-        Logger.logf "Setting cloud coverage to: {0}%" [|clouds * 100.0|]
-        simulationEngine.PostMessage(SetCloudCoverage clouds))
+        logger.Infof "Setting cloud coverage to: %f pct" (clouds * 100.0)
+        simulationEngine.SetCloudCoverage clouds)
     
     member _.SetTransparencyCommand = ReactiveCommand.create (fun (trans: float) -> 
-        Logger.logf "Setting transparency to: {0}%" [|trans * 100.0|]
-        simulationEngine.PostMessage(SetTransparency trans))
+        logger.Infof "Setting transparency to: %f pct" (trans * 100.0)
+        simulationEngine.SetTransparency trans)
     
     // Weather preset commands - updated to use createSimple for unit commands
     member _.SetClearNightCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting 'Clear Night' atmospheric preset"
-        simulationEngine.PostMessage(SetSeeingCondition 1.2)
-        simulationEngine.PostMessage(SetCloudCoverage 0.0)
-        simulationEngine.PostMessage(SetTransparency 0.95))
+        logger.Info "Setting 'Clear Night' atmospheric preset"
+        simulationEngine.SetSeeingCondition 1.2
+        simulationEngine.SetCloudCoverage 0.0
+        simulationEngine.SetTransparency 0.95)
     
     member _.SetAverageSeeingCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting 'Average Seeing' atmospheric preset"
-        simulationEngine.PostMessage(SetSeeingCondition 2.5)
-        simulationEngine.PostMessage(SetTransparency 0.8))
+        logger.Info "Setting 'Average Seeing' atmospheric preset"
+        simulationEngine.SetSeeingCondition 2.5
+        simulationEngine.SetTransparency 0.8)
     
     member _.SetPartlyCloudyCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting 'Partly Cloudy' atmospheric preset"
-        simulationEngine.PostMessage(SetCloudCoverage 0.4)
-        simulationEngine.PostMessage(SetTransparency 0.7))
+        logger.Info "Setting 'Partly Cloudy' atmospheric preset"
+        simulationEngine.SetCloudCoverage 0.4
+        simulationEngine.SetTransparency 0.7)
     
     member _.SetVeryCloudyCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting 'Very Cloudy' atmospheric preset"
-        simulationEngine.PostMessage(SetCloudCoverage 0.8)
-        simulationEngine.PostMessage(SetTransparency 0.4))
+        logger.Info "Setting 'Very Cloudy' atmospheric preset"
+        simulationEngine.SetCloudCoverage 0.8
+        simulationEngine.SetTransparency 0.4)
     
     override _.Dispose(disposing) =
         if disposing then
@@ -629,7 +631,7 @@ type AtmosphereViewModel(simulationEngine: SimulationEngine) =
 // Updated RotatorViewModel with unit command support
 type RotatorViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
-    
+    let logger = Logger.getLogger<RotatorViewModel>()    
     // Observable state
     let position = ReactiveProperty<float>()
     let isMoving = ReactiveProperty<bool>()
@@ -639,8 +641,8 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
         simulationEngine.RotatorStateChanged
             .ObserveOn(SynchronizationContext.Current)
             .Subscribe(fun state ->
-                Logger.logf "RotatorViewModel received state update: Position={0}, IsMoving={1}" 
-                    [|state.Position; state.IsMoving|]
+                logger.Infof "RotatorViewModel received state update: Position=%f, IsMoving=%b" 
+                    state.Position state.IsMoving
                 position.Value <- state.Position
                 isMoving.Value <- state.IsMoving)
             |> cleanup.Add
@@ -648,7 +650,7 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
             .Skip(1)  // Skip the initial value to avoid immediately overwriting
             .DistinctUntilChanged()
             .Subscribe(fun x -> 
-                simulationEngine.PostMessage(SetRotatorPosition x))
+                simulationEngine.SetRotatorPosition x)
             |> cleanup.Add
 
         let currentRotatorState = simulationEngine.CurrentState.Rotator
@@ -661,25 +663,25 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
     
     // Commands
     member _.SetPositionCommand = ReactiveCommand.create (fun (angle: float) -> 
-        Logger.logf "Setting rotator position to: {0} degrees" [|angle|]
-        simulationEngine.PostMessage(SetRotatorPosition angle))
+        logger.Infof "Setting rotator position to: %f degrees" angle
+        simulationEngine.SetRotatorPosition angle)
     
     // Add preset angle commands - updated to use createSimple
     member _.SetAngle0Command = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting rotator to 0 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 0.0))
+        logger.Info "Setting rotator to 0 degrees"
+        simulationEngine.SetRotatorPosition 0.0)
     
     member _.SetAngle90Command = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting rotator to 90 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 90.0))
+        logger.Info "Setting rotator to 90 degrees"
+        simulationEngine.SetRotatorPosition 90.0)
     
     member _.SetAngle180Command = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting rotator to 180 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 180.0))
+        logger.Info "Setting rotator to 180 degrees"
+        simulationEngine.SetRotatorPosition 180.0)
     
     member _.SetAngle270Command = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Setting rotator to 270 degrees"
-        simulationEngine.PostMessage(SetRotatorPosition 270.0))
+        logger.Info "Setting rotator to 270 degrees"
+        simulationEngine.SetRotatorPosition 270.0)
     
     override _.Dispose(disposing) =
         if disposing then
@@ -687,7 +689,7 @@ type RotatorViewModel(simulationEngine: SimulationEngine) =
 
 type StarFieldViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
-    
+    let logger = Logger.getLogger<StarFieldViewModel>()    
     // Observable state
     let currentImage = ReactiveProperty<float[]>()
     let hasImage = ReactiveProperty<bool>()
@@ -726,8 +728,8 @@ type StarFieldViewModel(simulationEngine: SimulationEngine) =
     
     // Commands
     member _.GenerateSatelliteTrailCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Generating satellite trail"
-        simulationEngine.PostMessage(GenerateSatelliteTrail))
+        logger.Info "Generating satellite trail"
+        simulationEngine.GenerateSatelliteTrail())
     
     override _.Dispose(disposing) =
         if disposing then
@@ -737,7 +739,7 @@ type StarFieldViewModel(simulationEngine: SimulationEngine) =
 // Main View Model with all the sub-view models
 type MainViewModel(simulationEngine: SimulationEngine) =
     inherit ViewModelBase()
-    
+    let logger = Logger.getLogger<MainViewModel>()    
     // Child ViewModels
     let mountViewModel = new MountViewModel(simulationEngine)
     let cameraViewModel = new CameraViewModel(simulationEngine)
@@ -754,8 +756,8 @@ type MainViewModel(simulationEngine: SimulationEngine) =
     
     // Commands - updated to use createSimple
     member _.GenerateSatelliteTrailCommand = ReactiveCommand.createSimple (fun () -> 
-        Logger.log "Generating satellite trail from main view model"
-        simulationEngine.PostMessage(GenerateSatelliteTrail))
+        logger.Info "Generating satellite trail from main view model"
+        simulationEngine.GenerateSatelliteTrail())
     
     override this.Dispose(disposing) =
         if disposing then

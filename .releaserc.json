@@ -1,0 +1,64 @@
+{
+    "branches": [
+        "main"
+    ],
+    "plugins": [
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/release-notes-generator",
+        "@semantic-release/changelog",
+        "@semantic-release/github",
+        [
+            "@semantic-release/exec",
+            {
+                "prepareCmd": "echo ${nextRelease.version} > VERSION.txt"
+            }
+        ]
+    ],
+    "preset": "conventionalcommits",
+    "releaseRules": [
+        {
+            "type": "breaking",
+            "release": "major"
+        },
+        {
+            "type": "feat",
+            "release": "minor"
+        },
+        {
+            "type": "fix",
+            "release": "patch"
+        },
+        {
+            "type": "perf",
+            "release": "patch"
+        },
+        {
+            "type": "docs",
+            "release": false
+        },
+        {
+            "type": "style",
+            "release": false
+        },
+        {
+            "type": "refactor",
+            "release": false
+        },
+        {
+            "type": "test",
+            "release": false
+        },
+        {
+            "type": "build",
+            "release": false
+        },
+        {
+            "type": "ci",
+            "release": false
+        },
+        {
+            "type": "chore",
+            "release": false
+        }
+    ]
+}

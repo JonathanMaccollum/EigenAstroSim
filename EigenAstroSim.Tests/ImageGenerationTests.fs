@@ -144,13 +144,12 @@ module ImageGenerationTests =
         // Arrange
         let x, y = 100.0, 100.0
         let mag = 8.0
-        let color = 0.5
         let goodSeeing = 1.0 // 1.0 arcsecond seeing
         let badSeeing = 4.0  // 4.0 arcsecond seeing
         
         // Act
-        let (_, _, _, fwhmGood, _) = applySeeingToStar (x, y, mag, color) goodSeeing
-        let (_, _, _, fwhmBad, _) = applySeeingToStar (x, y, mag, color) badSeeing
+        let (_, _, _, fwhmGood, _) = applySeeingToStar (x, y, mag) goodSeeing
+        let (_, _, _, fwhmBad, _) = applySeeingToStar (x, y, mag) badSeeing
         
         // Assert
         // FWHM should be proportional to seeing
@@ -166,12 +165,11 @@ module ImageGenerationTests =
         
         // Create a star at the center
         let x, y = 50.0, 50.0
-        let mag = 8.0
         let fwhm = 2.0
         let intensity = 1000.0 // Arbitrary intensity value
         
         // Act
-        let resultImage = renderStar (x, y, mag, fwhm, intensity) image 1.0
+        let resultImage = renderStar (x, y, fwhm, intensity) image 1.0
         
         // Assert
         // Center pixel should have the most light

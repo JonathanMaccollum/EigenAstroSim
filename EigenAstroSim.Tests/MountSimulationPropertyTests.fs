@@ -69,26 +69,20 @@ module MountSimulationPropertyTests =
         
         // Assert - use relative tolerance based on error amplitude
         let relativeTolerance = 0.1 // 10% tolerance
-        let toleranceValue = relativeErrorTolerance maxErrorDegrees relativeTolerance
+        relativeErrorTolerance maxErrorDegrees relativeTolerance |> ignore
         
         // The RA change should be at most the periodic error amplitude
         Math.Abs(raDiff) |> should be (lessThanOrEqualTo maxErrorDegrees)
 
     [<Theory>]
-    [<InlineData(45.0, 30.0, 1.0, 0.0, 10.0, 600.0, 3.0)>]
-    [<InlineData(120.0, -10.0, 1.0, 0.0, 15.0, 300.0, 5.0)>]
-    [<InlineData(270.0, 80.0, 1.0, 0.0, 5.0, 900.0, 2.0)>]
-    let ``Periodic error should average to zero over complete period`` (ra, dec, trackingRate, polarError, periodicAmp, periodicPeriod, slewRate) =
+    [<InlineData(10.0, 600.0)>]
+    [<InlineData(15.0, 300.0)>]
+    [<InlineData(5.0, 900.0)>]
+    let ``Periodic error should average to zero over complete period`` (periodicAmp, periodicPeriod) =
         // Skip test if periodic error is not enabled
         if periodicAmp <= 0.0 || periodicPeriod <= 0.0 then
             true |> should equal true // Pass test
-        else
-            // Arrange
-            let state = createMountStateWithProperties ra dec trackingRate polarError periodicAmp periodicPeriod slewRate
-            
-            // Reset the state to have zero phase initially
-            let resetState = { state with PeriodicErrorPhase = 0.0 }
-            
+        else            
             // For this test, we'll sample by directly calculating periodic error values
             // instead of using the full updateMountForTime which includes other effects
             

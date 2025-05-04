@@ -12,9 +12,16 @@
         <UseWPF>true</UseWPF>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include="LoggingAdapter.cs" />
         <Compile Include="Views\Views.cs" />
         <Compile Include="MainWindow.xaml.cs" />
         <Compile Include="App.xaml.cs" />
         <Page Include="**\*.xaml" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FSharp.Core" Version="9.0.202" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.1" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     </ItemGroup>
 </Project>

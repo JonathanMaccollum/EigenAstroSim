@@ -216,9 +216,6 @@ module ImageGenerationPropertyTests =
     
     [<Fact>]
     let ``Poor seeing should reduce peak brightness of stars`` () =
-        // Use a consistent random seed for reproducibility
-        let rand = Random(42)
-        
         // Create a controlled test with specific parameters
         let width, height = 300, 300
         let ra = 120.0
@@ -302,7 +299,6 @@ module ImageGenerationPropertyTests =
         let state1 = createControlledSimulationState width height
         
         // Create state2 with 5x the exposure time
-        let exposureTime1 = 1.0
         let exposureTime2 = 5.0
         let camera2 = { state1.Camera with ExposureTime = exposureTime2 }
         let state2 = { state1 with Camera = camera2 }
@@ -406,10 +402,6 @@ module ImageGenerationPropertyTests =
         
     [<Fact>]
     let ``Satellite trail should create a line of bright pixels`` () =
-        // Use a fixed random seed for reproducibility across test runs
-        let fixedSeed = 42
-        let random = Random(fixedSeed)
-        
         testProperty 5 (fun () ->
             // Arrange
             let width, height = 400, 400

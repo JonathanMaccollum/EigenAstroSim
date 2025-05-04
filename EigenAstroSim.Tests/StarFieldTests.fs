@@ -211,7 +211,7 @@ module StarFieldTests =
         // Arrange
         let random = Random()
         let stars = [|
-            for i in 1..10 do
+            for _ in 1..10 do
                 createRandomStar random
         |]
         let starMap = stars |> Array.map (fun s -> (s.Id, s)) |> Map.ofArray

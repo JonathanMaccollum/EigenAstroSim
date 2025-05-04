@@ -4,6 +4,7 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include="Logger.fs" />
         <Compile Include="Types.fs" />
         <Compile Include="ImageGeneration.fs" />
         <Compile Include="MountSimulation.fs" />

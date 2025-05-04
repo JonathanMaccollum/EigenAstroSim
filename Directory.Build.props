@@ -1,0 +1,38 @@
+<Project>
+    <PropertyGroup>
+        <!-- Version Settings -->
+        <VersionPrefix>0.1.0</VersionPrefix>
+        <VersionSuffix>alpha</VersionSuffix>
+        <Version>$(VersionPrefix)-$(VersionSuffix)</Version>
+        <!-- Common Build Settings -->
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Assembly Metadata -->
+        <Company>EigenAstroSim Project</Company>
+        <Product>EigenAstroSim</Product>
+        <Copyright>Copyright © EigenAstroSim Project 2025</Copyright>
+        <Description>Virtual astrophotography equipment simulator for software development and testing.</Description>
+        <PackageProjectUrl>https://github.com/JonathanMacCollum/EigenAstroSim</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/JonathanMacCollum/EigenAstroSim.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <Authors>EigenAstroSim Project Contributors</Authors>
+        <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+    <!-- F# Specific Settings -->
+    <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.fsproj'">
+        <FSharpFileOrder>true</FSharpFileOrder>
+        <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
+    </PropertyGroup>
+    <!-- Package References -->
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    </ItemGroup>
+</Project>
