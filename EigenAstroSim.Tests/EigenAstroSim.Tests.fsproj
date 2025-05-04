@@ -12,6 +12,8 @@
         <Compile Include="MountSimulationPropertyTests.fs" />
         <Compile Include="ImageGeneratorTests.fs" />
         <Compile Include="ImageGeneratorPropertyTests.fs" />
+        <Compile Include="VirtualSensorTests.fs" />
+        <Compile Include="VirtualSensorPropertyTests.fs" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EigenAstroSim.Domain\EigenAstroSim.Domain.fsproj" />
