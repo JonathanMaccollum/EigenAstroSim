@@ -1,24 +1,3 @@
-**Sky Background Testing Criteria:**
-- SQM measurements should be properly converted to absolute sky brightness using the formula:
-  * B = 10^(-(SQM-8.89)/2.5) × 10^4 cd/m²
-- Test accurate modeling of various light pollution conditions:
-  * Urban (SQM 16-18 mag/arcsec²)
-  * Suburban (SQM 18-20 mag/arcsec²)
-  * Rural (SQM 20-21.5 mag/arcsec²)
-  * Dark site (SQM 21.5-22.5 mag/arcsec²)
-- Sky background should have appropriate spectral components:
-  * HPS (High Pressure Sodium) with characteristic 589nm emission peak
-  * LED with blue-rich spectrum and multiple emission peaks
-  * Mercury vapor with discrete emission lines at 405, 436, 546, and 578nm
-- Airglow contribution should be properly modeled:
-  * OH emission in NIR (dominant at dark sites with SQM > 21.5)
-  * Oxygen emission at 557.7nm and 630.0nm
-  * Sodium emission at 589.0nm and 589.6nm
-- Moonlight contribution should vary with lunar phase:
-  * New moon: negligible addition to sky brightness
-  * Quarter moon: 0.5-1.0 mag/arcsec² reduction in SQM
-  * Full moon: 3-4 mag/arcsec² reduction in SQM# Virtual Astrophotography Sensor: Test-Driven Implementation Plan
-
 ## Overview
 
 This document outlines a comprehensive plan for implementing a high-fidelity Virtual Astrophotography Sensor alongside our existing image generation system. The implementation will follow a test-driven development (TDD) approach, combining both unit testing and property-based testing to ensure correctness and robustness.
@@ -625,6 +604,28 @@ This layer will model photon arrival from celestial objects with physically accu
   - Mie scattering from aerosols
   - Molecular absorption bands (O₂, H₂O, O₃)
   - Airmass calculation using accurate atmospheric refraction models
+
+#### Sky Background Testing Criteria: ####
+- SQM measurements should be properly converted to absolute sky brightness using the formula:
+  * B = 10^(-(SQM-8.89)/2.5) × 10^4 cd/m²
+- Test accurate modeling of various light pollution conditions:
+  * Urban (SQM 16-18 mag/arcsec²)
+  * Suburban (SQM 18-20 mag/arcsec²)
+  * Rural (SQM 20-21.5 mag/arcsec²)
+  * Dark site (SQM 21.5-22.5 mag/arcsec²)
+- Sky background should have appropriate spectral components:
+  * HPS (High Pressure Sodium) with characteristic 589nm emission peak
+  * LED with blue-rich spectrum and multiple emission peaks
+  * Mercury vapor with discrete emission lines at 405, 436, 546, and 578nm
+- Airglow contribution should be properly modeled:
+  * OH emission in NIR (dominant at dark sites with SQM > 21.5)
+  * Oxygen emission at 557.7nm and 630.0nm
+  * Sodium emission at 589.0nm and 589.6nm
+- Moonlight contribution should vary with lunar phase:
+  * New moon: negligible addition to sky brightness
+  * Quarter moon: 0.5-1.0 mag/arcsec² reduction in SQM
+  * Full moon: 3-4 mag/arcsec² reduction in SQM# Virtual Astrophotography Sensor: Test-Driven Implementation Plan
+
 
 ### 2. Optical Transformation Layer
 
