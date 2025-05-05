@@ -1,0 +1,155 @@
+# Reactive Architecture for Virtual Astrophotography Simulation
+
+## 1. Architectural Overview
+
+The Virtual Astrophotography Simulator requires modeling multiple physical processes that evolve over time. Rather than creating a tightly-coupled sequential pipeline, we're adopting a reactive architecture using observable streams to model these temporal relationships.
+
+This document outlines our approach to creating independent, decoupled processing layers that are composed through reactive streams to create a realistic simulation system.
+
+## 2. Independent Layer Model
+
+### Core Principles
+
+Each processing layer is designed as an independent module with these characteristics:
+
+1. **Single Responsibility**: Each layer handles exactly one transformation aspect
+2. **Pure Transformation**: Layers are primarily pure functions that transform inputs to outputs
+3. **Stateless Design**: Layers don't maintain internal state between operations
+4. **Well-Defined Interfaces**: Each layer has clear input and output models
+5. **Independent Testing**: Layers can be tested in isolation with simulated inputs
+
+### Layer Interface Pattern
+
+Layers follow this general interface pattern:
+
+```fsharp
+/// Generic interface for an image processing layer
+type IProcessingLayer<'TInput, 'TOutput> =
+    /// Process the input data and produce output data
+    abstract Process : input:'TInput -> 'TOutput
+```
+
+This simple contract enables composition while maintaining separation of concerns.
+
+## 3. Multi-Stream Reactive Model
+
+### Time-Based Observable Streams
+
+The simulator handles multiple time-dependent components, each modeled as an independent observable stream:
+
+1. **Time Stream**: The fundamental clock that drives the simulation
+2. **Mount State Stream**: Evolution of telescope position and tracking errors
+3. **Atmospheric Stream**: Dynamic seeing conditions and cloud patterns
+4. **Optical System Stream**: Potential changes in focus or optical characteristics
+5. **Sensor Stream**: Temperature changes and other sensor dynamics
+
+### Stream Relationships
+
+These streams are not hierarchical but rather coordinate through time:
+
+```
+                  ┌───────────────────┐
+                  │   Time Stream     │
+                  └──┬─────┬─────┬────┘
+                     │     │     │
+         ┌───────────┘     │     └────────────┐
+         │                 │                  │
+┌────────▼─────────┐ ┌─────▼────────┐ ┌───────▼──────────┐
+│  Mount Stream    │ │ Atmo Stream  │ │  Sensor Stream   │
+└──────────────────┘ └──────────────┘ └──────────────────┘
+         │                 │                  │
+         └───────┬─────────┘                  │
+                 │                            │
+        ┌────────▼───────────┐                │
+        │  Subframe Stream   │                │
+        └─────────┬──────────┘                │
+                  │                           │
+                  └─────────┬─────────────────┘
+                            │
+                   ┌────────▼─────────┐
+                   │   Image Stream   │
+                   └──────────────────┘
+```
+
+## 4. Reactive Composition
+
+### Stream Orchestration
+
+We use Rx operators to orchestrate these streams:
+
+```fsharp
+// Create a time-based simulation
+let createSimulation initialState parameters =
+    // Core time tick stream
+    let timeTicks = 
+        Observable.interval(TimeSpan.FromSeconds(parameters.SubframeDuration))
+        |> Observable.take(int (initialState.Camera.ExposureTime / parameters.SubframeDuration))
+        
+    // Time-dependent component streams
+    let mountStream = createMountStream initialState.Mount timeTicks
+    let atmosphereStream = createAtmosphereStream initialState.Atmosphere timeTicks
+    
+    // Combine streams into state snapshots
+    let stateSnapshots = 
+        Observable.combineLatest(mountStream, atmosphereStream)
+        |> Observable.withLatestFrom(timeTicks)
+        |> Observable.map(fun ((mount, atmosphere), time) -> 
+            { Time = time; Mount = mount; Atmosphere = atmosphere })
+            
+    // Process subframes
+    let subframes = 
+        stateSnapshots
+        |> Observable.map(processSubframe)
+        
+    // Combine subframes into final image
+    let finalImage = 
+        subframes
+        |> Observable.scan(combineSubframes)
+        |> Observable.last()
+        
+    finalImage
+```
+
+### Layer Integration
+
+Processing layers are integrated using the `map` operator:
+
+```fsharp
+let processSubframe snapshot =
+    snapshot
+    |> projectStars                // Star projection layer
+    |> generatePhotons             // Photon generation layer
+    |> applyPsf                    // PSF application layer
+    |> simulateSensor              // Sensor physics layer
+```
+
+## 5. Benefits and Considerations
+
+### Advantages
+
+1. **Natural Time Modeling**: Accurately represents the temporal nature of physical processes
+2. **Loose Coupling**: Changes to one component don't affect others
+3. **Parallel Processing**: Can easily parallelize subframe generation
+4. **Cancelable Operations**: Long exposures can be canceled mid-processing
+5. **Progressive Updates**: Can provide real-time feedback during processing
+6. **Resource Efficiency**: Can control memory usage through backpressure
+
+### Considerations
+
+1. **Debugging Complexity**: Asynchronous streams can be harder to debug
+2. **Resource Management**: Buffer pooling must be coordinated with stream processing
+3. **Error Propagation**: Errors must be properly handled across stream boundaries
+4. **Testing**: Requires testing both individual layers and stream composition
+5. **Scheduling**: Must balance parallelism against system resources
+
+## 6. Implementation Strategy
+
+Our implementation approach follows these steps:
+
+1. Define independent layer modules with clear interfaces
+2. Create observable streams for time-dependent components
+3. Implement reactive composition using Rx operators
+4. Add resource management through buffer pooling
+5. Integrate progress reporting and cancelation support
+
+This architecture provides a solid foundation for our virtual astrophotography simulation, allowing us to model complex physical processes with appropriate temporal relationships while maintaining clean separation of concerns.

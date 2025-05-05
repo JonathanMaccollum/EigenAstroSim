@@ -22,6 +22,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        _simulationEngine.SetImageGenerationMode(true);
         SetupExceptionHandling();
         var appDataPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

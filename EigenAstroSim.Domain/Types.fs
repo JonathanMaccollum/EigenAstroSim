@@ -35,6 +35,7 @@ module Types =
         PolarAlignmentError: float
         PeriodicErrorAmplitude: float
         PeriodicErrorPeriod: float
+        PeriodicErrorHarmonics: (int * float * float) list
         IsSlewing: bool
         SlewRate: float
         FocalLength: float

@@ -10,6 +10,7 @@ open EigenAstroSim.Domain.StarField
 open EigenAstroSim.Domain.StarFieldGenerator
 open EigenAstroSim.Domain.MountSimulation
 open EigenAstroSim.Domain.ImageGeneration
+open EigenAstroSim.Domain.VirtualSensorSimulation
 
 // Component-specific message types
 type MountMsg =
@@ -62,6 +63,7 @@ type SimulationEngine() =
             PolarAlignmentError = 0.0
             PeriodicErrorAmplitude = 0.0
             PeriodicErrorPeriod = 0.0
+            PeriodicErrorHarmonics = []
             IsSlewing = false
             SlewRate = 1.0
             FocalLength = 400.0
@@ -89,12 +91,12 @@ type SimulationEngine() =
         CurrentTime = DateTime.Now
         HasSatelliteTrail = false
     }
-    
     // Flag for continuous capture mode
     let mutable continuousCaptureEnabled = false
     
     // Detailed mount state
     let mutable detailedMountState = createDefaultDetailedMountState state.Mount
+    let mutable currentImageGenerator : IImageGenerator = SimpleImageGenerator() :> IImageGenerator
     
     // The random generator for star field and other random elements
     let random = Random()
@@ -223,7 +225,7 @@ type SimulationEngine() =
             let timer = new System.Timers.Timer(duration * 1000.0)
             timer.AutoReset <- false
             timer.Elapsed.Add(fun _ -> 
-                let image = generateImage state
+                let image = currentImageGenerator.GenerateImage state
                 imageGenerated.OnNext(image)
                 
                 // Update camera state to indicate exposure completed
@@ -300,7 +302,7 @@ type SimulationEngine() =
             state <- { state with HasSatelliteTrail = true }
             
             // Generate the image with satellite trail
-            let image = generateImage state
+            let image = currentImageGenerator.GenerateImage state
             imageGenerated.OnNext(image)
             
             // Reset the flag after generating one image
@@ -383,6 +385,14 @@ type SimulationEngine() =
     member _.CurrentState = state
     member _.CurrentDetailedMountState = detailedMountState
     member _.IsContinuousCaptureEnabled = continuousCaptureEnabled
+    member _.CurrentImageGenerator = currentImageGenerator
+    member _.SetImageGenerationMode(useHighFidelity: bool) =
+        currentImageGenerator <- 
+            if useHighFidelity then
+                EnhancedVirtualAstrophotographySensor() :> IImageGenerator
+            else
+                SimpleImageGenerator() :> IImageGenerator
+
 
 // Extension methods to simplify API usage for client code
 [<AutoOpen>]
