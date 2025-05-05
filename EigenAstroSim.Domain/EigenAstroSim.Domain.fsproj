@@ -4,6 +4,7 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include="Bessel.fs" />
         <Compile Include="Logger.fs" />
         <Compile Include="BufferPoolManager.fs" />
         <Compile Include="Types.fs" />
@@ -14,5 +15,8 @@
         <Compile Include="EvolvingConditions.fs" />
         <Compile Include="EnhancedSubframeProcessor2.fs" />
         <Compile Include="EnhancedVirtualAstrophotographySensor.fs" />
+        <Compile Include="SensorPhysics.fs" />
+        <Compile Include="EnhancedTracking.fs" />
+        <Compile Include="IndependentLayerModels.fs" />
     </ItemGroup>
 </Project>

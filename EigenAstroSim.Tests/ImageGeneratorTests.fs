@@ -30,6 +30,7 @@ module ImageGeneratorTests =
             PolarAlignmentError = 0.0
             PeriodicErrorAmplitude = 0.0
             PeriodicErrorPeriod = 0.0
+            PeriodicErrorHarmonics = []
             IsSlewing = false
             SlewRate = 0.0
             FocalLength = 500.0 // 500mm focal length
@@ -83,8 +84,8 @@ module ImageGeneratorTests =
     [<Fact>]
     let ``Factory should create the correct implementation`` () =
         // Arrange & Act
-        let simpleGenerator = ImageGeneratorFactory.create false
-        let highFidelityGenerator = ImageGeneratorFactory.create true
+        let simpleGenerator = EnhancedImageGeneratorFactory.create false
+        let highFidelityGenerator = EnhancedImageGeneratorFactory.create true
         
         // Assert
         simpleGenerator.ImplementationName |> should equal "Simple Image Generator"
@@ -110,37 +111,3 @@ module ImageGeneratorTests =
         // At least some pixels should have non-zero values (the star should be visible)
         image |> Array.exists (fun value -> value > 0.0) |> should equal true
     
-    [<Fact>]
-    let ``VirtualAstrophotographySensor should produce valid images`` () =
-        // Arrange
-        let generator = VirtualAstrophotographySensor() :> IImageGenerator
-        let state = createTestState 100 100
-        
-        // Act
-        let image = generator.GenerateImage state
-        
-        // Assert
-        image.Length |> should equal (state.Camera.Width * state.Camera.Height)
-        
-        // At least some pixels should have non-zero values (the star should be visible)
-        image |> Array.exists (fun value -> value > 0.0) |> should equal true
-    
-    [<Fact>]
-    let ``Both implementations should produce images with the same dimensions`` () =
-        // Arrange
-        let simpleGenerator = SimpleImageGenerator() :> IImageGenerator
-        let highFidelityGenerator = VirtualAstrophotographySensor() :> IImageGenerator
-        
-        // Create a test state with random dimensions
-        let random = Random(42) // Fixed seed for reproducibility
-        let width = 200 + random.Next(300)
-        let height = 200 + random.Next(300)
-        let state = createTestState width height
-        
-        // Act
-        let simpleImage = simpleGenerator.GenerateImage state
-        let highFidelityImage = highFidelityGenerator.GenerateImage state
-        
-        // Assert
-        simpleImage.Length |> should equal (width * height)
-        highFidelityImage.Length |> should equal (width * height)

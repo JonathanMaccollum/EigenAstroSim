@@ -63,6 +63,7 @@ type SimulationEngine() =
             PolarAlignmentError = 0.0
             PeriodicErrorAmplitude = 0.0
             PeriodicErrorPeriod = 0.0
+            PeriodicErrorHarmonics = []
             IsSlewing = false
             SlewRate = 1.0
             FocalLength = 400.0
@@ -388,7 +389,7 @@ type SimulationEngine() =
     member _.SetImageGenerationMode(useHighFidelity: bool) =
         currentImageGenerator <- 
             if useHighFidelity then
-                VirtualAstrophotographySensor() :> IImageGenerator
+                EnhancedVirtualAstrophotographySensor() :> IImageGenerator
             else
                 SimpleImageGenerator() :> IImageGenerator
 

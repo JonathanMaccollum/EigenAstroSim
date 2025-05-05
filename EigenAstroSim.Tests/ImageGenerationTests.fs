@@ -27,6 +27,7 @@ module ImageGenerationTests =
             PolarAlignmentError = 0.0
             PeriodicErrorAmplitude = 0.0
             PeriodicErrorPeriod = 0.0
+            PeriodicErrorHarmonics = []
             IsSlewing = false
             SlewRate = 0.0
             FocalLength = 500.0 // 500mm focal length

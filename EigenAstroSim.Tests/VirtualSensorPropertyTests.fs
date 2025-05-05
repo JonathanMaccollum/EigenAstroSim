@@ -167,7 +167,7 @@ module VirtualSensorPropertyTests =
             }
             
             // Act
-            let generator = VirtualAstrophotographySensor() :> IImageGenerator
+            let generator = EnhancedVirtualAstrophotographySensor() :> IImageGenerator
             let goodSeeingImage = generator.GenerateImage goodSeeingState
             let badSeeingImage = generator.GenerateImage badSeeingState
             
@@ -205,7 +205,7 @@ module VirtualSensorPropertyTests =
             }
             
             // Act
-            let generator = VirtualAstrophotographySensor() :> IImageGenerator
+            let generator = EnhancedVirtualAstrophotographySensor() :> IImageGenerator
             let shortExposureImage = generator.GenerateImage shortExposureState
             let longExposureImage = generator.GenerateImage longExposureState
             

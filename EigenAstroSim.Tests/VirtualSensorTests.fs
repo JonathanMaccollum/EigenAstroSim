@@ -231,7 +231,7 @@ module VirtualSensorTests =
         let longExpState = { state with Camera = { state.Camera with ExposureTime = 5.0 } }
         
         // Act
-        let generator = VirtualAstrophotographySensor() :> IImageGenerator
+        let generator = EnhancedVirtualAstrophotographySensor() :> IImageGenerator
         let shortExpImage = generator.GenerateImage shortExpState
         let longExpImage = generator.GenerateImage longExpState
         
@@ -250,7 +250,7 @@ module VirtualSensorTests =
         // Arrange
         let width, height = 200, 150
         let state = createTestState width height
-        let generator = VirtualAstrophotographySensor() :> IImageGenerator
+        let generator = EnhancedVirtualAstrophotographySensor() :> IImageGenerator
         
         // Act
         let image = generator.GenerateImage state

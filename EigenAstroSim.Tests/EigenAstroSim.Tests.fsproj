@@ -18,6 +18,8 @@
         <Compile Include="EnhancedVirtualSensorPropertyTests.fs" />
         <Compile Include="BufferManagerTests.fs" />
         <Compile Include="BufferManagerPropertyTests.fs" />
+        <Compile Include="IndependentLayerModelTests.fs" />
+        <Compile Include="IndependentLayerModelPropertyTests.fs" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EigenAstroSim.Domain\EigenAstroSim.Domain.fsproj" />

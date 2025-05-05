@@ -62,7 +62,7 @@ module ImageGeneratorPropertyTests =
         testProperty 5 (fun () ->
             // Arrange
             let simpleGenerator = SimpleImageGenerator() :> IImageGenerator
-            let highFidelityGenerator = VirtualAstrophotographySensor() :> IImageGenerator
+            let highFidelityGenerator = EnhancedVirtualAstrophotographySensor() :> IImageGenerator
             
             // Create a random state with random dimensions
             let width = 100 + random.Next(500)
@@ -83,7 +83,7 @@ module ImageGeneratorPropertyTests =
     [<Fact>]
     let ``Longer exposure time should produce brighter images`` () =
         // Arrange
-        let generator = ImageGeneratorFactory.create false // Use simple generator for predictability
+        let generator = EnhancedImageGeneratorFactory.create false // Use simple generator for predictability
         
         // Create a base state with controlled parameters
         let width, height = 300, 300
@@ -110,7 +110,7 @@ module ImageGeneratorPropertyTests =
     [<Fact>]
     let ``Higher cloud coverage should make images dimmer`` () =
         // Arrange
-        let generator = ImageGeneratorFactory.create false // Use simple generator for predictability
+        let generator = EnhancedImageGeneratorFactory.create false // Use simple generator for predictability
         
         // Create a base state with controlled parameters
         let width, height = 300, 300
@@ -134,7 +134,7 @@ module ImageGeneratorPropertyTests =
     [<Fact>]
     let ``Better seeing should produce stars with higher peak brightness`` () =
         // Arrange
-        let generator = ImageGeneratorFactory.create false // Use simple generator for predictability
+        let generator = EnhancedImageGeneratorFactory.create false // Use simple generator for predictability
         
         // Create a base state with controlled parameters
         let width, height = 300, 300
