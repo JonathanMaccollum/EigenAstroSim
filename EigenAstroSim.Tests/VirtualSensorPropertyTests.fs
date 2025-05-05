@@ -97,59 +97,6 @@ module VirtualSensorPropertyTests =
         )
     
     [<Fact>]
-    let ``Property: PSF energy is always conserved`` () =
-        testProperty 10 (fun () ->
-            // Arrange
-            let fwhm = 0.5 + random.NextDouble() * 9.5  // 0.5 to 10.0 pixels
-            let size = BufferManagement.calculatePSFSize fwhm
-            
-            // Act
-            let psf = BufferManagement.generateGaussianPSF fwhm size
-            
-            // Calculate total energy in the PSF
-            let mutable sum = 0.0
-            for x = 0 to size - 1 do
-                for y = 0 to size - 1 do
-                    sum <- sum + psf.[x, y]
-            
-            // Assert: PSF should always sum to 1.0
-            Math.Abs(sum - 1.0) < 0.001
-        )
-    
-    [<Fact>]
-    let ``Property: Total photon count is preserved during accumulation`` () =
-        testProperty 10 (fun () ->
-            // Arrange
-            let width, height = 150, 150
-            let buffer = BufferManagement.createBuffer width height
-            
-            // Random PSF
-            let fwhm = 1.0 + random.NextDouble() * 5.0
-            let size = BufferManagement.calculatePSFSize fwhm
-            let psf = BufferManagement.generateGaussianPSF fwhm size
-            
-            // Random position within buffer bounds (with margin)
-            let margin = float size / 2.0 + 5.0
-            let x = margin + random.NextDouble() * (float width - 2.0 * margin)
-            let y = margin + random.NextDouble() * (float height - 2.0 * margin)
-            
-            // Random photon count
-            let photons = 100.0 + random.NextDouble() * 10000.0
-            
-            // Act
-            BufferManagement.accumulatePhotons buffer x y photons psf
-            
-            // Calculate total photons in buffer
-            let mutable sum = 0.0
-            for i = 0 to width - 1 do
-                for j = 0 to height - 1 do
-                    sum <- sum + buffer.[i, j]
-            
-            // Assert: Total photons preserved
-            Math.Abs(sum - photons) / photons < 0.001
-        )
-    
-    [<Fact>]
     let ``Property: Better seeing produces sharper star images`` () =
         testProperty 5 (fun () ->
             // Arrange

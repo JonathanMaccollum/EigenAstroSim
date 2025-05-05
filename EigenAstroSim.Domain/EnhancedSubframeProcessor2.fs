@@ -5,6 +5,178 @@ open EigenAstroSim.Domain
 open EigenAstroSim.Domain.Types
 open EigenAstroSim.Domain.BufferManagement
 
+
+/// Telescope optical parameters
+type TelescopeOptics = {
+    /// Aperture diameter in mm
+    Aperture: float
+    
+    /// Central obstruction diameter in mm (0 for refractors)
+    Obstruction: float
+    
+    /// Optical transmission (0.0-1.0)
+    Transmission: float
+}
+
+/// Functions for calculating photon flux based on star properties and optical system
+module PhotonFlux =
+    /// Convert B-V color index to effective wavelength in nanometers
+    let colorIndexToWavelength (colorIndex: float) =
+        // Approximate conversion based on stellar spectral types
+        // B-V = -0.3 (hot blue stars) -> ~450nm
+        // B-V = 0.6 (Sun-like stars) -> ~550nm  
+        // B-V = 1.5 (cool red stars) -> ~650nm
+        450.0 + (colorIndex + 0.3) * 100.0
+        |> min 700.0
+        |> max 400.0
+    
+    /// Calculate the zero-point flux in photons/s/m²
+    /// This is the flux for a 0-magnitude star
+    let zeroPointFlux (wavelength: float) =
+        // Standard value for V-band (550nm) is approximately 1e10 photons/s/m²
+        // We adjust slightly based on wavelength
+        let baseFlux = 1.0e10
+        match wavelength with
+        | w when w < 500.0 -> baseFlux * 0.8  // Blue stars have fewer photons per unit energy
+        | w when w > 600.0 -> baseFlux * 1.2  // Red stars have more photons per unit energy
+        | _ -> baseFlux
+    
+    /// Calculate effective aperture area considering obstruction
+    let apertureArea (optics: TelescopeOptics) =
+        // Area = π(R² - r²) where R is aperture radius and r is obstruction radius
+        let apertureRadius = optics.Aperture / 2.0
+        let obstructionRadius = optics.Obstruction / 2.0
+        
+        Math.PI * (apertureRadius * apertureRadius - obstructionRadius * obstructionRadius) / 1000000.0 // Convert to m²
+    
+    /// Calculate photon flux for a given star
+    let calculatePhotonFlux 
+        (star: Star) 
+        (optics: TelescopeOptics)
+        (exposureTime: float) : float =
+        
+        // Get effective wavelength from star color
+        let wavelength = colorIndexToWavelength star.Color
+        
+        // Get zero point flux for this wavelength
+        let zp = zeroPointFlux wavelength
+        
+        // Calculate relative flux using Pogson's equation
+        // Each 5 magnitudes = factor of 100 in brightness
+        let relativeFlux = Math.Pow(10.0, -0.4 * star.Magnitude)
+        
+        // Get effective aperture area in square meters
+        let area = apertureArea optics
+        
+        // Calculate total photons collected
+        let photons = zp * relativeFlux * area * optics.Transmission * exposureTime
+        
+        photons
+    
+    /// Create default telescope optics for typical amateur setups
+    let createDefaultOptics (mountState: MountState) =
+        // Estimate aperture from focal length using typical f-ratios
+        let focalLength = mountState.FocalLength
+        
+        // For a typical f/7 system:
+        let aperture = focalLength / 7.0
+        
+        // Typical central obstruction is about 33% of aperture diameter for SCTs
+        let obstruction = aperture * 0.33
+        
+        // Typical transmission including mirrors and corrector plates
+        let transmission = 0.85
+        
+        {
+            Aperture = aperture
+            Obstruction = obstruction
+            Transmission = transmission
+        }
+    
+    /// Calculate a range of magnitudes that should be simulated
+    /// Returns (brightest, faintest) magnitudes to consider
+    let calculateMagnitudeRange (optics: TelescopeOptics) (exposureTime: float) =
+        // Calculate limiting magnitude based on aperture (rough approximation)
+        // Visual limiting magnitude ≈ 7.5 + 5*log10(aperture in cm)
+        let apertureCm = optics.Aperture / 10.0
+        let visualLimit = 7.5 + 5.0 * Math.Log10(apertureCm)
+        
+        // Adjust for exposure time (each doubling of exposure adds ~0.75 mag)
+        let exposureGain = 0.75 * Math.Log(exposureTime / 0.1) / Math.Log(2.0)
+        
+        // Brightest stars to consider (to avoid overflow)
+        let brightestMag = -1.0
+        
+        // Faintest stars to consider (based on detection limits)
+        let faintestMag = visualLimit + exposureGain
+        
+        (brightestMag, faintestMag)
+
+/// Functions for projecting stars onto the sensor plane
+module StarProjection =
+    /// Convert degrees to radians
+    let private toRadians degrees = degrees * Math.PI / 180.0
+    
+    /// Convert radians to degrees
+    let private toDegrees radians = radians * 180.0 / Math.PI
+    
+    /// Calculate the plate scale in arcseconds per pixel
+    let calculatePlateScale (focalLength: float) (pixelSize: float) =
+        // Standard formula: 206.265 * (pixel size in μm) / (focal length in mm)
+        206.265 * pixelSize / focalLength
+    
+    /// Project a star from celestial coordinates (RA/Dec) to pixel coordinates
+    let projectStar 
+        (star: Star) 
+        (mountState: MountState) 
+        (cameraState: CameraState) : float * float =
+        
+        // Calculate angular distance between star and mount pointing
+        // RA is in degrees, and we need to account for the cos(Dec) factor
+        let deltaRA = (star.RA - mountState.RA) * Math.Cos(toRadians mountState.Dec)
+        let deltaDec = star.Dec - mountState.Dec
+        
+        // Convert to arcseconds
+        let deltaRAArcsec = deltaRA * 3600.0
+        let deltaDecArcsec = deltaDec * 3600.0
+        
+        // Calculate plate scale (arcseconds per pixel)
+        let plateScale = calculatePlateScale mountState.FocalLength cameraState.PixelSize
+        
+        // Convert to pixels (negative for RA because RA increases eastward)
+        let x = (-deltaRAArcsec / plateScale) + float cameraState.Width / 2.0
+        let y = (deltaDecArcsec / plateScale) + float cameraState.Height / 2.0
+        
+        (x, y)
+    
+    /// Determine if a star is visible on the sensor
+    let isStarVisible 
+        (star: Star) 
+        (mountState: MountState) 
+        (cameraState: CameraState) : bool =
+        
+        let (x, y) = projectStar star mountState cameraState
+        
+        // Check if coordinates are within the sensor bounds
+        // Add a margin for stars that are partially visible
+        let margin = 20.0  // pixels
+        x >= -margin && 
+        x < float cameraState.Width + margin && 
+        y >= -margin && 
+        y < float cameraState.Height + margin
+    
+    /// Get all stars that are visible on the sensor
+    let getVisibleStars 
+        (starField: StarFieldState) 
+        (mountState: MountState) 
+        (cameraState: CameraState) : Star seq =
+        
+        starField.Stars
+        |> Map.toSeq
+        |> Seq.map snd
+        |> Seq.filter (fun star -> isStarVisible star mountState cameraState)
+
+
 /// Enhanced implementation of subframe processing with physical accuracy
 module EnhancedSubframeProcessor2 =
 

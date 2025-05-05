@@ -89,7 +89,7 @@ module ImageGeneratorTests =
         
         // Assert
         simpleGenerator.ImplementationName |> should equal "Simple Image Generator"
-        highFidelityGenerator.ImplementationName |> should equal "Virtual Astrophotography Sensor"
+        highFidelityGenerator.ImplementationName |> should equal "Enhanced Virtual Astrophotography Sensor"
         
         // Verify capabilities match expectations
         simpleGenerator.Capabilities.FidelityLevel |> should be (lessThan highFidelityGenerator.Capabilities.FidelityLevel)
