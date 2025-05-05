@@ -5,9 +5,14 @@
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="Logger.fs" />
+        <Compile Include="BufferPoolManager.fs" />
         <Compile Include="Types.fs" />
         <Compile Include="ImageGeneration.fs" />
         <Compile Include="MountSimulation.fs" />
         <Compile Include="VirtualSensorSimulation.fs" />
+        <Compile Include="EnhancedTelescopeOptics.fs" />
+        <Compile Include="EvolvingConditions.fs" />
+        <Compile Include="EnhancedSubframeProcessor2.fs" />
+        <Compile Include="EnhancedVirtualAstrophotographySensor.fs" />
     </ItemGroup>
 </Project>
